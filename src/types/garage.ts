@@ -3,11 +3,16 @@ export type OpeningHoursRange = {
   close: string;
 };
 
+export type OpeningHoursSlots = OpeningHoursRange[];
+
 export type OpeningHoursClosed = {
   closed: true;
 };
 
-export type OpeningHours = Record<string, OpeningHoursRange | OpeningHoursClosed>;
+export type OpeningHours = Record<
+  string,
+  OpeningHoursRange | OpeningHoursClosed | OpeningHoursSlots
+>;
 
 export type GarageCard = {
   id: number;
