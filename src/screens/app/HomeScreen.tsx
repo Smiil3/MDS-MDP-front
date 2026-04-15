@@ -42,22 +42,33 @@ const isClosedDay = (
   value: OpeningHours[string],
 ): value is {
   closed: true;
-} => 'closed' in value && value.closed === true;
+} => typeof value === 'object' && !Array.isArray(value) && value !== null && 'closed' in value;
 
 const formatOpeningHours = (openingHours: OpeningHours | null): string => {
   if (!openingHours) {
     return 'Horaires non renseignés';
   }
 
-  const firstEntry = Object.entries(openingHours).find(([, value]) =>
-    isClosedDay(value) ? false : Boolean(value.open && value.close),
-  );
+  const firstEntry = Object.entries(openingHours).find(([, value]) => {
+    if (Array.isArray(value)) {
+      return value.length > 0 && Boolean(value[0]?.open && value[0]?.close);
+    }
+    return isClosedDay(value) ? false : Boolean(value.open && value.close);
+  });
 
   if (!firstEntry) {
     return 'Horaires non renseignés';
   }
 
   const [dayKey, value] = firstEntry;
+  if (Array.isArray(value)) {
+    const firstSlot = value[0];
+    if (!firstSlot) {
+      return 'Horaires non renseignés';
+    }
+    return `${DAY_LABELS[dayKey] ?? dayKey}: ${firstSlot.open}-${firstSlot.close}`;
+  }
+
   if (isClosedDay(value)) {
     return `${DAY_LABELS[dayKey] ?? dayKey}: fermé`;
   }

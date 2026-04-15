@@ -32,6 +32,21 @@ export type DriverRegisterPayload = {
   id_subscription: number;
 };
 
+export type MechanicOpeningHourSlot = {
+  open: string;
+  close: string;
+};
+
+export type MechanicOpeningHours = {
+  mon: MechanicOpeningHourSlot[];
+  tue: MechanicOpeningHourSlot[];
+  wed: MechanicOpeningHourSlot[];
+  thu: MechanicOpeningHourSlot[];
+  fri: MechanicOpeningHourSlot[];
+  sat: MechanicOpeningHourSlot[];
+  sun: MechanicOpeningHourSlot[];
+};
+
 export type MechanicRegisterPayload = {
   role: 'mechanic';
   email: string;
@@ -41,6 +56,8 @@ export type MechanicRegisterPayload = {
   zip_code: number;
   city: string;
   description?: string;
+  image_url?: string;
+  opening_hours: MechanicOpeningHours;
   siret: string;
 };
 
