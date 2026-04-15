@@ -4,6 +4,8 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  Linking,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -83,6 +85,9 @@ const formatOpeningHours = (openingHours: OpeningHours | null): string => {
 
   return `${DAY_LABELS[dayKey] ?? dayKey}: ${value.open}-${value.close}`;
 };
+
+const hasGarageCoordinates = (garage: GarageCard) =>
+  typeof garage.latitude === 'number' && typeof garage.longitude === 'number';
 
 export function HomeScreen() {
   const [garages, setGarages] = useState<GarageCard[]>([]);
@@ -216,15 +221,45 @@ export function HomeScreen() {
 
   const hasGeolocation = Boolean(coords) && !locationDenied;
   const garagesWithCoordinates = useMemo(
-    () =>
-      garages.filter(
-        (garage) => typeof garage.latitude === 'number' && typeof garage.longitude === 'number',
-      ),
+    () => garages.filter(hasGarageCoordinates),
     [garages],
   );
 
+  const openGarageNavigation = async (garage: GarageCard) => {
+    if (!hasGarageCoordinates(garage)) {
+      setErrorMessage('Navigation indisponible: coordonnées du garage manquantes.');
+      return;
+    }
+
+    setErrorMessage(null);
+
+    const destination = `${garage.latitude},${garage.longitude}`;
+    const encodedName = encodeURIComponent(garage.name);
+    const defaultSystemUrl =
+      Platform.OS === 'ios'
+        ? `http://maps.apple.com/?daddr=${destination}&q=${encodedName}`
+        : `geo:0,0?q=${destination}(${encodedName})`;
+    const fallbackUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
+
+    try {
+      if (await Linking.canOpenURL(defaultSystemUrl)) {
+        await Linking.openURL(defaultSystemUrl);
+        return;
+      }
+      if (await Linking.canOpenURL(fallbackUrl)) {
+        await Linking.openURL(fallbackUrl);
+        return;
+      }
+
+      setErrorMessage("Impossible d'ouvrir la navigation pour ce garage.");
+    } catch {
+      setErrorMessage("Impossible d'ouvrir la navigation pour ce garage.");
+    }
+  };
+
   const renderGarageCard = (item: GarageCard) => {
     const distanceLabel = formatDistance(item.distanceMeters);
+    const canNavigate = hasGarageCoordinates(item);
     return (
       <View style={styles.card}>
         <Image source={{ uri: item.imageUrl ?? PLACEHOLDER_IMAGE }} style={styles.cardImage} />
@@ -236,6 +271,17 @@ export function HomeScreen() {
           <Text numberOfLines={2} style={styles.cardDescription}>
             {item.description?.trim() || 'Description à venir.'}
           </Text>
+          <Pressable
+            disabled={!canNavigate}
+            onPress={() => {
+              void openGarageNavigation(item);
+            }}
+            style={[styles.navigateButton, !canNavigate ? styles.navigateButtonDisabled : null]}
+          >
+            <Text style={[styles.navigateButtonText, !canNavigate ? styles.navigateButtonTextDisabled : null]}>
+              Naviguer
+            </Text>
+          </Pressable>
         </View>
       </View>
     );
@@ -432,6 +478,25 @@ const styles = StyleSheet.create({
   },
   cardDescription: {
     fontSize: 12,
+    color: '#475569',
+  },
+  navigateButton: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    backgroundColor: '#1d4ed8',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+  },
+  navigateButtonDisabled: {
+    backgroundColor: '#cbd5e1',
+  },
+  navigateButtonText: {
+    color: '#f8fafc',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  navigateButtonTextDisabled: {
     color: '#475569',
   },
   mapContainer: {
