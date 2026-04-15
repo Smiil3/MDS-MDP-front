@@ -19,6 +19,8 @@ export type GarageCard = {
   name: string;
   city: string;
   address: string;
+  latitude: number | null;
+  longitude: number | null;
   imageUrl: string | null;
   openingHours: OpeningHours | null;
   description: string | null;

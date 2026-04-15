@@ -4,13 +4,19 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 
-import { getNearbyGarages } from '../../services/api/garageApi';
+import { GarageMap } from '../../components/home/GarageMap';
+import {
+  CARDS_VIEW_LIMIT,
+  getNearbyGarages,
+  MAP_VIEW_LIMIT,
+} from '../../services/api/garageApi';
 import { GarageCard, OpeningHours } from '../../types/garage';
 
 const PLACEHOLDER_IMAGE =
@@ -25,6 +31,8 @@ const DAY_LABELS: Record<string, string> = {
   sat: 'Sam',
   sun: 'Dim',
 };
+
+type ViewMode = 'cards' | 'map';
 
 const formatDistance = (distanceMeters: number | null) => {
   if (distanceMeters === null) {
@@ -83,6 +91,8 @@ export function HomeScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [locationDenied, setLocationDenied] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('cards');
+  const [selectedGarage, setSelectedGarage] = useState<GarageCard | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -123,7 +133,23 @@ export function HomeScreen() {
   }, []);
 
   useEffect(() => {
+    if (locationDenied && viewMode === 'map') {
+      setViewMode('cards');
+      setSelectedGarage(null);
+    }
+  }, [locationDenied, viewMode]);
+
+  useEffect(() => {
     let isMounted = true;
+
+    if (viewMode === 'map' && !coords) {
+      setGarages([]);
+      setIsLoading(false);
+      return () => {
+        isMounted = false;
+      };
+    }
+
     const timeout = setTimeout(() => {
       const fetchGarages = async () => {
         try {
@@ -134,7 +160,7 @@ export function HomeScreen() {
             lat: coords?.lat,
             lng: coords?.lng,
             search,
-            limit: 5,
+            limit: viewMode === 'map' ? MAP_VIEW_LIMIT : CARDS_VIEW_LIMIT,
           });
 
           if (!isMounted) {
@@ -142,6 +168,12 @@ export function HomeScreen() {
           }
 
           setGarages(response.garages);
+          setSelectedGarage((current) => {
+            if (!current) {
+              return null;
+            }
+            return response.garages.find((garage) => garage.id === current.id) ?? null;
+          });
         } catch {
           if (isMounted) {
             setErrorMessage("Impossible de charger les garages pour l'instant.");
@@ -166,7 +198,7 @@ export function HomeScreen() {
       isMounted = false;
       clearTimeout(timeout);
     };
-  }, [coords, search]);
+  }, [coords, search, viewMode]);
 
   const emptyStateText = useMemo(() => {
     if (isLoading) {
@@ -177,8 +209,37 @@ export function HomeScreen() {
       return 'Aucun garage trouvé pour cette recherche.';
     }
 
-    return 'Aucun garage disponible pour le moment.';
-  }, [isLoading, search]);
+    return viewMode === 'map'
+      ? 'Aucun garage géolocalisé disponible autour de vous.'
+      : 'Aucun garage disponible pour le moment.';
+  }, [isLoading, search, viewMode]);
+
+  const hasGeolocation = Boolean(coords) && !locationDenied;
+  const garagesWithCoordinates = useMemo(
+    () =>
+      garages.filter(
+        (garage) => typeof garage.latitude === 'number' && typeof garage.longitude === 'number',
+      ),
+    [garages],
+  );
+
+  const renderGarageCard = (item: GarageCard) => {
+    const distanceLabel = formatDistance(item.distanceMeters);
+    return (
+      <View style={styles.card}>
+        <Image source={{ uri: item.imageUrl ?? PLACEHOLDER_IMAGE }} style={styles.cardImage} />
+        <View style={styles.cardBody}>
+          <Text style={styles.cardTitle}>{item.name}</Text>
+          <Text style={styles.cardCity}>{item.city}</Text>
+          {distanceLabel ? <Text style={styles.cardDistance}>À {distanceLabel}</Text> : null}
+          <Text style={styles.cardHours}>{formatOpeningHours(item.openingHours)}</Text>
+          <Text numberOfLines={2} style={styles.cardDescription}>
+            {item.description?.trim() || 'Description à venir.'}
+          </Text>
+        </View>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -192,41 +253,87 @@ export function HomeScreen() {
 
       {locationDenied ? (
         <Text style={styles.infoText}>
-          Localisation refusée: affichage des garages triés par défaut (sans distance).
+          Localisation refusée: vue carte indisponible, affichage en cards par défaut.
         </Text>
       ) : null}
 
       {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
-      {isLoading ? (
-        <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color="#2563eb" />
-        </View>
-      ) : (
-        <FlatList
-          data={garages}
-          keyExtractor={(item) => String(item.id)}
-          contentContainerStyle={garages.length === 0 ? styles.emptyContainer : styles.listContent}
-          ListEmptyComponent={emptyStateText ? <Text style={styles.emptyText}>{emptyStateText}</Text> : null}
-          renderItem={({ item }) => {
-            const distanceLabel = formatDistance(item.distanceMeters);
-            return (
-              <View style={styles.card}>
-                <Image source={{ uri: item.imageUrl ?? PLACEHOLDER_IMAGE }} style={styles.cardImage} />
-                <View style={styles.cardBody}>
-                  <Text style={styles.cardTitle}>{item.name}</Text>
-                  <Text style={styles.cardCity}>{item.city}</Text>
-                  {distanceLabel ? <Text style={styles.cardDistance}>À {distanceLabel}</Text> : null}
-                  <Text style={styles.cardHours}>{formatOpeningHours(item.openingHours)}</Text>
-                  <Text numberOfLines={2} style={styles.cardDescription}>
-                    {item.description?.trim() || 'Description à venir.'}
-                  </Text>
-                </View>
+      <View style={styles.content}>
+        {isLoading ? (
+          <View style={styles.loaderContainer}>
+            <ActivityIndicator size="large" color="#2563eb" />
+          </View>
+        ) : viewMode === 'cards' ? (
+          <FlatList
+            data={garages}
+            keyExtractor={(item) => String(item.id)}
+            contentContainerStyle={garages.length === 0 ? styles.emptyContainer : styles.listContent}
+            ListEmptyComponent={emptyStateText ? <Text style={styles.emptyText}>{emptyStateText}</Text> : null}
+            renderItem={({ item }) => renderGarageCard(item)}
+          />
+        ) : (
+          <View style={styles.mapContainer}>
+            <GarageMap
+              garages={garagesWithCoordinates}
+              userCoords={coords}
+              selectedGarageId={selectedGarage?.id ?? null}
+              onSelectGarage={setSelectedGarage}
+              onMapPress={() => setSelectedGarage(null)}
+            />
+            {garagesWithCoordinates.length === 0 ? (
+              <View style={styles.mapEmptyOverlay}>
+                <Text style={styles.mapEmptyText}>{emptyStateText}</Text>
               </View>
-            );
+            ) : null}
+          </View>
+        )}
+      </View>
+
+      {viewMode === 'map' && selectedGarage ? (
+        <View style={styles.bottomSheet}>
+          <View style={styles.bottomSheetHeader}>
+            <Text style={styles.bottomSheetTitle}>Garage sélectionné</Text>
+            <Pressable onPress={() => setSelectedGarage(null)}>
+              <Text style={styles.bottomSheetClose}>Fermer</Text>
+            </Pressable>
+          </View>
+          {renderGarageCard(selectedGarage)}
+        </View>
+      ) : null}
+
+      <View style={styles.modeSelector}>
+        <Pressable
+          onPress={() => {
+            setViewMode('cards');
+            setSelectedGarage(null);
           }}
-        />
-      )}
+          style={[styles.modeButton, viewMode === 'cards' ? styles.modeButtonActive : null]}
+        >
+          <Text style={[styles.modeButtonText, viewMode === 'cards' ? styles.modeButtonTextActive : null]}>
+            Cards
+          </Text>
+        </Pressable>
+        <Pressable
+          disabled={!hasGeolocation}
+          onPress={() => setViewMode('map')}
+          style={[
+            styles.modeButton,
+            viewMode === 'map' ? styles.modeButtonActive : null,
+            !hasGeolocation ? styles.modeButtonDisabled : null,
+          ]}
+        >
+          <Text style={[styles.modeButtonText, viewMode === 'map' ? styles.modeButtonTextActive : null]}>
+            Map
+          </Text>
+        </Pressable>
+      </View>
+
+      {!hasGeolocation ? (
+        <View style={styles.modeHint}>
+          <Text style={styles.modeHintText}>Autorisez la localisation pour activer la carte.</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -237,6 +344,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#f1f5f9',
     paddingTop: 20,
     paddingHorizontal: 16,
+  },
+  content: {
+    flex: 1,
+    paddingTop: 12,
   },
   title: {
     fontSize: 22,
@@ -270,8 +381,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   listContent: {
-    paddingTop: 14,
-    paddingBottom: 20,
+    paddingTop: 2,
+    paddingBottom: 140,
     gap: 12,
   },
   emptyContainer: {
@@ -322,5 +433,109 @@ const styles = StyleSheet.create({
   cardDescription: {
     fontSize: 12,
     color: '#475569',
+  },
+  mapContainer: {
+    flex: 1,
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#dbe3ef',
+  },
+  mapEmptyOverlay: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    top: 12,
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  mapEmptyText: {
+    color: '#f8fafc',
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  modeSelector: {
+    position: 'absolute',
+    bottom: 22,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#dbe3ef',
+    padding: 4,
+    gap: 4,
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  modeButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+  },
+  modeButtonActive: {
+    backgroundColor: '#1d4ed8',
+  },
+  modeButtonDisabled: {
+    opacity: 0.45,
+  },
+  modeButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  modeButtonTextActive: {
+    color: '#f8fafc',
+  },
+  modeHint: {
+    position: 'absolute',
+    bottom: 74,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.72)',
+    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  modeHintText: {
+    color: '#e2e8f0',
+    fontSize: 12,
+  },
+  bottomSheet: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    bottom: 86,
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#dbe3ef',
+    padding: 10,
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  bottomSheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+    paddingHorizontal: 2,
+  },
+  bottomSheetTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  bottomSheetClose: {
+    fontSize: 13,
+    color: '#2563eb',
+    fontWeight: '600',
   },
 });

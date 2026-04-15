@@ -8,6 +8,9 @@ type GetNearbyGaragesParams = {
   limit?: number;
 };
 
+export const CARDS_VIEW_LIMIT = 5;
+export const MAP_VIEW_LIMIT = 20;
+
 export async function getNearbyGarages(
   params: GetNearbyGaragesParams = {},
 ): Promise<NearbyGaragesResponse> {
@@ -22,7 +25,7 @@ export async function getNearbyGarages(
     query.set('search', params.search.trim());
   }
 
-  query.set('limit', String(params.limit ?? 5));
+  query.set('limit', String(params.limit ?? CARDS_VIEW_LIMIT));
 
   const path = `/api/garages/nearby?${query.toString()}`;
   return apiGet<NearbyGaragesResponse>(path);
