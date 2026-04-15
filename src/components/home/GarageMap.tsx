@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { StyleSheet } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 
@@ -13,7 +13,6 @@ type MapMarkerPayload = {
   lat: number;
   lng: number;
   imageUrl: string;
-  selected: boolean;
 };
 
 type MapPayload = {
@@ -93,6 +92,66 @@ const buildMapHtml = (payload: MapPayload) => `<!doctype html>
       }).addTo(map);
 
       map.on('click', () => post({ type: 'mapPress' }));
+      const markersById = new Map();
+      let selectedMarkerId = null;
+
+      const createMarkerIcon = (imageUrl, selected) => {
+        const pinClass = selected ? 'garage-pin selected' : 'garage-pin';
+        return L.divIcon({
+          className: '',
+          html: '<div class="' + pinClass + '"><img src="' + imageUrl + '" alt="garage" /></div>',
+          iconSize: [44, 44],
+          iconAnchor: [22, 22],
+        });
+      };
+
+      const setSelectedMarker = (garageId) => {
+        if (selectedMarkerId !== null) {
+          const previous = markersById.get(selectedMarkerId);
+          if (previous) {
+            previous.marker.setIcon(createMarkerIcon(previous.imageUrl, false));
+          }
+        }
+
+        selectedMarkerId = null;
+
+        if (garageId === null || garageId === undefined) {
+          return;
+        }
+
+        const current = markersById.get(garageId);
+        if (!current) {
+          return;
+        }
+
+        current.marker.setIcon(createMarkerIcon(current.imageUrl, true));
+        selectedMarkerId = garageId;
+      };
+
+      const focusGarage = (garageId) => {
+        const target = markersById.get(garageId);
+        if (!target) {
+          return;
+        }
+        map.flyTo(target.marker.getLatLng(), Math.max(map.getZoom(), 14), { animate: true, duration: 0.35 });
+        setSelectedMarker(garageId);
+      };
+
+      window.__focusGarage = focusGarage;
+      window.__clearGarageSelection = () => setSelectedMarker(null);
+
+      window.addEventListener('message', (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          if (message.type === 'focusGarage') {
+            focusGarage(message.garageId);
+          } else if (message.type === 'clearGarageSelection') {
+            setSelectedMarker(null);
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      });
 
       if (payload.userCoords) {
         L.circleMarker([payload.userCoords.lat, payload.userCoords.lng], {
@@ -105,15 +164,13 @@ const buildMapHtml = (payload: MapPayload) => `<!doctype html>
       }
 
       payload.markers.forEach((marker) => {
-        const pinClass = marker.selected ? 'garage-pin selected' : 'garage-pin';
-        const icon = L.divIcon({
-          className: '',
-          html: '<div class="' + pinClass + '"><img src="' + marker.imageUrl + '" alt="garage" /></div>',
-          iconSize: [44, 44],
-          iconAnchor: [22, 22],
-        });
+        const icon = createMarkerIcon(marker.imageUrl, false);
         const leafletMarker = L.marker([marker.lat, marker.lng], { icon }).addTo(map);
-        leafletMarker.on('click', () => post({ type: 'selectGarage', garageId: marker.id }));
+        markersById.set(marker.id, { marker: leafletMarker, imageUrl: marker.imageUrl });
+        leafletMarker.on('click', () => {
+          focusGarage(marker.id);
+          post({ type: 'selectGarage', garageId: marker.id });
+        });
       });
     </script>
   </body>
@@ -126,6 +183,7 @@ export function GarageMap({
   onSelectGarage,
   onMapPress,
 }: GarageMapProps) {
+  const webViewRef = useRef<WebView | null>(null);
   const garagesById = useMemo(() => new Map(garages.map((garage) => [garage.id, garage])), [garages]);
   const payload = useMemo<MapPayload>(() => {
     const center = resolveCenter(garages, userCoords);
@@ -140,7 +198,6 @@ export function GarageMap({
           lat: garage.latitude,
           lng: garage.longitude,
           imageUrl: garage.imageUrl ?? PLACEHOLDER_IMAGE,
-          selected: garage.id === selectedGarageId,
         },
       ];
     });
@@ -151,7 +208,34 @@ export function GarageMap({
       userCoords,
       markers,
     };
-  }, [garages, selectedGarageId, userCoords]);
+  }, [garages, userCoords]);
+
+  const syncSelectedGarage = () => {
+    if (!webViewRef.current) {
+      return;
+    }
+
+    if (selectedGarageId === null) {
+      webViewRef.current.injectJavaScript(`
+        if (window.__clearGarageSelection) {
+          window.__clearGarageSelection();
+        }
+        true;
+      `);
+      return;
+    }
+
+    webViewRef.current.injectJavaScript(`
+      if (window.__focusGarage) {
+        window.__focusGarage(${selectedGarageId});
+      }
+      true;
+    `);
+  };
+
+  useEffect(() => {
+    syncSelectedGarage();
+  }, [selectedGarageId]);
 
   const onWebViewMessage = (event: WebViewMessageEvent) => {
     try {
@@ -176,10 +260,12 @@ export function GarageMap({
 
   return (
     <WebView
+      ref={webViewRef}
       style={StyleSheet.absoluteFill}
       originWhitelist={['*']}
       source={{ html: buildMapHtml(payload) }}
       onMessage={onWebViewMessage}
+      onLoadEnd={syncSelectedGarage}
       javaScriptEnabled
       domStorageEnabled
       mixedContentMode="always"
