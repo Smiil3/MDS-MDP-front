@@ -12,6 +12,12 @@ type DriverDraft = {
   birthDate: string;
 };
 
+export type GarageServiceDraft = {
+  category: string;
+  serviceName: string;
+  price: string;
+};
+
 type GarageDraft = {
   siret: string;
   name: string;
@@ -20,9 +26,7 @@ type GarageDraft = {
   address: string;
   zipCode: string;
   city: string;
-  serviceCategory: string;
-  serviceName: string;
-  servicePrice: string;
+  services: GarageServiceDraft[];
   openingHours: MechanicOpeningHours;
   email: string;
   password: string;
@@ -61,6 +65,12 @@ const createDriverDraft = (): DriverDraft => ({
   birthDate: '',
 });
 
+const createGarageServiceDraft = (): GarageServiceDraft => ({
+  category: '',
+  serviceName: '',
+  price: '',
+});
+
 const createGarageDraft = (): GarageDraft => ({
   siret: '',
   name: '',
@@ -69,9 +79,7 @@ const createGarageDraft = (): GarageDraft => ({
   address: '',
   zipCode: '',
   city: '',
-  serviceCategory: '',
-  serviceName: '',
-  servicePrice: '',
+  services: [createGarageServiceDraft()],
   openingHours: createDefaultOpeningHours(),
   email: '',
   password: '',
@@ -100,17 +108,21 @@ export function AuthOnboardingProvider({ children }: PropsWithChildren) {
       resetDriver: () => setDriverState(createDriverDraft()),
       resetGarage: () => setGarageState(createGarageDraft()),
       toGarageServicesPayload: () => {
-        const category = garage.serviceCategory.trim();
-        const serviceName = garage.serviceName.trim();
-        const price = Number(garage.servicePrice);
-        if (!category || !serviceName || !Number.isFinite(price) || price <= 0) {
-          return [];
+        const grouped = new Map<string, { serviceName: string; price: number }[]>();
+        for (const service of garage.services) {
+          const category = service.category.trim();
+          const serviceName = service.serviceName.trim();
+          const price = Number(service.price);
+          if (!category || !serviceName || !Number.isFinite(price) || price <= 0) {
+            continue;
+          }
+          const current = grouped.get(category) ?? [];
+          current.push({ serviceName, price });
+          grouped.set(category, current);
         }
-        return [
-          {
-            [category]: [{ serviceName, price }],
-          },
-        ];
+        return Array.from(grouped.entries()).map(([category, services]) => ({
+          [category]: services,
+        }));
       },
     }),
     [selectedAccountType, driver, garage],
