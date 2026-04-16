@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as Location from 'expo-location';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
   ActivityIndicator,
   FlatList,
@@ -20,6 +21,7 @@ import {
   MAP_VIEW_LIMIT,
 } from '../../services/api/garageApi';
 import { GarageCard, OpeningHours } from '../../types/garage';
+import { HomeStackParamList } from '../../types/navigation';
 
 const PLACEHOLDER_IMAGE =
   'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=1200&q=80';
@@ -35,6 +37,7 @@ const DAY_LABELS: Record<string, string> = {
 };
 
 type ViewMode = 'cards' | 'map';
+type Props = NativeStackScreenProps<HomeStackParamList, 'HomeList'>;
 
 const formatDistance = (distanceMeters: number | null) => {
   if (distanceMeters === null) {
@@ -89,7 +92,7 @@ const formatOpeningHours = (openingHours: OpeningHours | null): string => {
 const hasGarageCoordinates = (garage: GarageCard) =>
   typeof garage.latitude === 'number' && typeof garage.longitude === 'number';
 
-export function HomeScreen() {
+export function HomeScreen({ navigation }: Props) {
   const [garages, setGarages] = useState<GarageCard[]>([]);
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -257,11 +260,19 @@ export function HomeScreen() {
     }
   };
 
-  const renderGarageCard = (item: GarageCard) => {
+  const openGarageDetails = (garage: GarageCard) => {
+    navigation.navigate('GarageDetails', { garageId: garage.id });
+  };
+
+  const renderGarageCard = (item: GarageCard, withDetailsNavigation = false) => {
     const distanceLabel = formatDistance(item.distanceMeters);
     const canNavigate = hasGarageCoordinates(item);
     return (
-      <View style={styles.card}>
+      <Pressable
+        disabled={!withDetailsNavigation}
+        onPress={() => openGarageDetails(item)}
+        style={({ pressed }) => [styles.card, pressed && withDetailsNavigation ? styles.cardPressed : null]}
+      >
         <Image source={{ uri: item.imageUrl ?? PLACEHOLDER_IMAGE }} style={styles.cardImage} />
         <View style={styles.cardBody}>
           <Text style={styles.cardTitle}>{item.name}</Text>
@@ -273,7 +284,8 @@ export function HomeScreen() {
           </Text>
           <Pressable
             disabled={!canNavigate}
-            onPress={() => {
+            onPress={(event) => {
+              event.stopPropagation();
               void openGarageNavigation(item);
             }}
             style={[styles.navigateButton, !canNavigate ? styles.navigateButtonDisabled : null]}
@@ -283,7 +295,7 @@ export function HomeScreen() {
             </Text>
           </Pressable>
         </View>
-      </View>
+      </Pressable>
     );
   };
 
@@ -316,7 +328,7 @@ export function HomeScreen() {
             keyExtractor={(item) => String(item.id)}
             contentContainerStyle={garages.length === 0 ? styles.emptyContainer : styles.listContent}
             ListEmptyComponent={emptyStateText ? <Text style={styles.emptyText}>{emptyStateText}</Text> : null}
-            renderItem={({ item }) => renderGarageCard(item)}
+            renderItem={({ item }) => renderGarageCard(item, true)}
           />
         ) : (
           <View style={styles.mapContainer}>
@@ -344,7 +356,7 @@ export function HomeScreen() {
               <Text style={styles.bottomSheetClose}>Fermer</Text>
             </Pressable>
           </View>
-          {renderGarageCard(selectedGarage)}
+          {renderGarageCard(selectedGarage, false)}
         </View>
       ) : null}
 
@@ -447,6 +459,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#e2e8f0',
+  },
+  cardPressed: {
+    opacity: 0.92,
   },
   cardImage: {
     width: 110,

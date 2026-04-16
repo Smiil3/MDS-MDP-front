@@ -6,6 +6,7 @@ import { useAuth } from '../../context/auth/AuthContext';
 import {
   AuthRole,
   DriverRegisterPayload,
+  MechanicServiceCategory,
   MechanicOpeningHourSlot,
   MechanicOpeningHours,
   MechanicRegisterPayload,
@@ -13,8 +14,16 @@ import {
 import { AuthStackParamList } from '../../types/navigation';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
-type MechanicStep = 'garage' | 'credentials';
+type MechanicStep = 'garage' | 'hours' | 'services' | 'credentials';
 type DayKey = keyof MechanicOpeningHours;
+type DraftMechanicService = {
+  serviceName: string;
+  price: string;
+};
+type DraftMechanicServiceCategory = {
+  categoryName: string;
+  services: DraftMechanicService[];
+};
 
 const roleLabels: Record<AuthRole, string> = {
   driver: 'Driver',
@@ -76,6 +85,47 @@ const hasInvalidSlot = (openingHours: MechanicOpeningHours) =>
     openingHours[day].some((slot) => getTimeIndex(slot.open) >= getTimeIndex(slot.close)),
   );
 
+const createInitialDraftServices = (): DraftMechanicServiceCategory[] => [
+  {
+    categoryName: '',
+    services: [{ serviceName: '', price: '' }],
+  },
+];
+
+const hasAtLeastOneCompleteService = (categories: DraftMechanicServiceCategory[]) =>
+  categories.some((category) =>
+    category.services.some(
+      (service) =>
+        category.categoryName.trim() &&
+        service.serviceName.trim() &&
+        Number.isFinite(Number(service.price)) &&
+        Number(service.price) > 0,
+    ),
+  );
+
+const hasInvalidServiceEntries = (categories: DraftMechanicServiceCategory[]) =>
+  categories.some((category) => {
+    const categoryName = category.categoryName.trim();
+    if (!categoryName) {
+      return true;
+    }
+
+    if (category.services.length === 0) {
+      return true;
+    }
+
+    return category.services.some((service) => {
+      if (!service.serviceName.trim()) {
+        return true;
+      }
+      const parsedPrice = Number(service.price);
+      if (!Number.isFinite(parsedPrice)) {
+        return true;
+      }
+      return parsedPrice <= 0;
+    });
+  });
+
 export function RegisterScreen({ navigation }: Props) {
   const { register } = useAuth();
   const [role, setRole] = useState<AuthRole>('driver');
@@ -99,6 +149,7 @@ export function RegisterScreen({ navigation }: Props) {
   const [description, setDescription] = useState('');
   const [siret, setSiret] = useState('');
   const [openingHours, setOpeningHours] = useState<MechanicOpeningHours>(createInitialOpeningHours);
+  const [services, setServices] = useState<DraftMechanicServiceCategory[]>(createInitialDraftServices);
 
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -134,6 +185,71 @@ export function RegisterScreen({ navigation }: Props) {
     }));
   };
 
+  const updateServiceCategoryName = (index: number, value: string) => {
+    setServices((previous) =>
+      previous.map((category, categoryIndex) =>
+        categoryIndex === index ? { ...category, categoryName: value } : category,
+      ),
+    );
+  };
+
+  const addServiceCategory = () => {
+    setServices((previous) => [
+      ...previous,
+      { categoryName: '', services: [{ serviceName: '', price: '' }] },
+    ]);
+  };
+
+  const removeServiceCategory = (index: number) => {
+    setServices((previous) => previous.filter((_, categoryIndex) => categoryIndex !== index));
+  };
+
+  const addServiceToCategory = (categoryIndex: number) => {
+    setServices((previous) =>
+      previous.map((category, currentIndex) =>
+        currentIndex === categoryIndex
+          ? {
+              ...category,
+              services: [...category.services, { serviceName: '', price: '' }],
+            }
+          : category,
+      ),
+    );
+  };
+
+  const removeServiceFromCategory = (categoryIndex: number, serviceIndex: number) => {
+    setServices((previous) =>
+      previous.map((category, currentIndex) =>
+        currentIndex === categoryIndex
+          ? {
+              ...category,
+              services: category.services.filter((_, itemIndex) => itemIndex !== serviceIndex),
+            }
+          : category,
+      ),
+    );
+  };
+
+  const updateServiceInCategory = (
+    categoryIndex: number,
+    serviceIndex: number,
+    field: keyof DraftMechanicService,
+    value: string,
+  ) => {
+    setServices((previous) =>
+      previous.map((category, currentCategoryIndex) =>
+        currentCategoryIndex === categoryIndex
+          ? {
+              ...category,
+              services: category.services.map((service, currentServiceIndex) =>
+                currentServiceIndex === serviceIndex ? { ...service, [field]: value } : service,
+              ),
+            }
+          : category,
+      ),
+    );
+  };
+
   const onSelectRole = (nextRole: AuthRole) => {
     setRole(nextRole);
     if (nextRole === 'mechanic') {
@@ -142,7 +258,7 @@ export function RegisterScreen({ navigation }: Props) {
     setError(null);
   };
 
-  const garageStepValidationError = useMemo(() => {
+  const garageInfoValidationError = useMemo(() => {
     if (role !== 'mechanic') {
       return null;
     }
@@ -172,6 +288,13 @@ export function RegisterScreen({ navigation }: Props) {
         return "L'URL de l'image n'est pas valide.";
       }
     }
+    return null;
+  }, [role, mechanicName, address, zipCode, city, siret, imageUrl]);
+
+  const hoursValidationError = useMemo(() => {
+    if (role !== 'mechanic') {
+      return null;
+    }
 
     if (!hasAtLeastOneOpeningSlot(openingHours)) {
       return "Ajoute au moins un créneau d'ouverture.";
@@ -182,7 +305,23 @@ export function RegisterScreen({ navigation }: Props) {
     }
 
     return null;
-  }, [role, mechanicName, address, zipCode, city, siret, imageUrl, openingHours]);
+  }, [role, openingHours]);
+
+  const servicesValidationError = useMemo(() => {
+    if (role !== 'mechanic') {
+      return null;
+    }
+
+    if (!hasAtLeastOneCompleteService(services)) {
+      return 'Ajoute au moins une prestation valide.';
+    }
+
+    if (hasInvalidServiceEntries(services)) {
+      return 'Chaque catégorie doit avoir un nom, et chaque prestation doit avoir un nom et un prix supérieur à 0.';
+    }
+
+    return null;
+  }, [role, services]);
 
   const credentialsValidationError = useMemo(() => {
     if (!email.trim() || !password.trim()) {
@@ -234,26 +373,100 @@ export function RegisterScreen({ navigation }: Props) {
     subscriptionId,
   ]);
 
-  const onNextMechanicStep = () => {
+  const toMechanicServicesPayload = (): MechanicServiceCategory[] =>
+    services
+      .map((category) => {
+        const categoryName = category.categoryName.trim();
+        if (!categoryName) {
+          return null;
+        }
+
+        const entries = category.services
+          .map((service) => {
+            const serviceName = service.serviceName.trim();
+            const price = Number(service.price);
+            if (!serviceName || !Number.isFinite(price) || price <= 0) {
+              return null;
+            }
+            return {
+              serviceName,
+              price,
+            };
+          })
+          .filter((entry): entry is { serviceName: string; price: number } => entry !== null);
+
+        if (entries.length === 0) {
+          return null;
+        }
+
+        return { [categoryName]: entries };
+      })
+      .filter((category): category is MechanicServiceCategory => category !== null);
+
+  const validateMechanicStep = (step: MechanicStep): string | null => {
+    if (step === 'garage') {
+      return garageInfoValidationError;
+    }
+    if (step === 'hours') {
+      return hoursValidationError;
+    }
+    if (step === 'services') {
+      return servicesValidationError;
+    }
+    return credentialsValidationError;
+  };
+
+  const nextMechanicStep = (step: MechanicStep): MechanicStep | null => {
+    if (step === 'garage') {
+      return 'hours';
+    }
+    if (step === 'hours') {
+      return 'services';
+    }
+    if (step === 'services') {
+      return 'credentials';
+    }
+    return null;
+  };
+
+  const onSelectMechanicStep = (targetStep: MechanicStep) => {
     setError(null);
-    if (garageStepValidationError) {
-      setError(garageStepValidationError);
+    const stepsOrder: MechanicStep[] = ['garage', 'hours', 'services', 'credentials'];
+    const targetIndex = stepsOrder.indexOf(targetStep);
+    const currentIndex = stepsOrder.indexOf(mechanicStep);
+
+    if (targetIndex <= currentIndex) {
+      setMechanicStep(targetStep);
       return;
     }
-    setMechanicStep('credentials');
+
+    for (let index = 0; index < targetIndex; index += 1) {
+      const step = stepsOrder[index];
+      const validationError = validateMechanicStep(step);
+      if (validationError) {
+        setError(validationError);
+        return;
+      }
+    }
+
+    setMechanicStep(targetStep);
   };
 
   const onSubmit = async () => {
     setError(null);
 
-    if (role === 'mechanic' && mechanicStep === 'garage') {
-      onNextMechanicStep();
-      return;
-    }
+    if (role === 'mechanic') {
+      const currentStepError = validateMechanicStep(mechanicStep);
+      if (currentStepError) {
+        setError(currentStepError);
+        return;
+      }
 
-    if (role === 'mechanic' && garageStepValidationError) {
-      setError(garageStepValidationError);
-      return;
+      const nextStep = nextMechanicStep(mechanicStep);
+      if (nextStep) {
+        setMechanicStep(nextStep);
+        return;
+      }
     }
 
     if (credentialsValidationError) {
@@ -288,6 +501,7 @@ export function RegisterScreen({ navigation }: Props) {
           description: description.trim() || undefined,
           image_url: imageUrl.trim() || undefined,
           opening_hours: openingHours,
+          services: toMechanicServicesPayload(),
           siret: siret.trim(),
         };
         await register(payload);
@@ -372,7 +586,7 @@ export function RegisterScreen({ navigation }: Props) {
         <>
           <View style={styles.stepHeader}>
             <Pressable
-              onPress={() => setMechanicStep('garage')}
+              onPress={() => onSelectMechanicStep('garage')}
               style={[styles.stepButton, mechanicStep === 'garage' && styles.stepButtonActive]}
             >
               <Text style={[styles.stepButtonText, mechanicStep === 'garage' && styles.stepButtonTextActive]}>
@@ -380,24 +594,27 @@ export function RegisterScreen({ navigation }: Props) {
               </Text>
             </Pressable>
             <Pressable
-              onPress={() => {
-                if (!garageStepValidationError) {
-                  setMechanicStep('credentials');
-                }
-              }}
-              style={[
-                styles.stepButton,
-                mechanicStep === 'credentials' && styles.stepButtonActive,
-                garageStepValidationError ? styles.stepButtonDisabled : null,
-              ]}
+              onPress={() => onSelectMechanicStep('hours')}
+              style={[styles.stepButton, mechanicStep === 'hours' && styles.stepButtonActive]}
             >
-              <Text
-                style={[
-                  styles.stepButtonText,
-                  mechanicStep === 'credentials' && styles.stepButtonTextActive,
-                ]}
-              >
-                2. Identifiants
+              <Text style={[styles.stepButtonText, mechanicStep === 'hours' && styles.stepButtonTextActive]}>
+                2. Horaires
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => onSelectMechanicStep('services')}
+              style={[styles.stepButton, mechanicStep === 'services' && styles.stepButtonActive]}
+            >
+              <Text style={[styles.stepButtonText, mechanicStep === 'services' && styles.stepButtonTextActive]}>
+                3. Prestations
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => onSelectMechanicStep('credentials')}
+              style={[styles.stepButton, mechanicStep === 'credentials' && styles.stepButtonActive]}
+            >
+              <Text style={[styles.stepButtonText, mechanicStep === 'credentials' && styles.stepButtonTextActive]}>
+                4. Identifiants
               </Text>
             </Pressable>
           </View>
@@ -439,103 +656,144 @@ export function RegisterScreen({ navigation }: Props) {
                 style={styles.input}
               />
               <TextInput value={city} onChangeText={setCity} placeholder="Ville" style={styles.input} />
+            </>
+          ) : null}
 
-              <View style={styles.hoursContainer}>
-                <Text style={styles.hoursTitle}>Heures d&apos;ouverture</Text>
-                {dayKeys.map((day) => (
-                  <View key={day} style={styles.dayCard}>
-                    <View style={styles.dayHeader}>
-                      <Text style={styles.dayTitle}>{dayLabels[day]}</Text>
-                      <Pressable onPress={() => addMechanicSlot(day)} style={styles.smallActionButton}>
-                        <Text style={styles.smallActionText}>+ Créneau</Text>
+          {mechanicStep === 'hours' ? (
+            <View style={styles.hoursContainer}>
+              <Text style={styles.hoursTitle}>Heures d&apos;ouverture</Text>
+              {dayKeys.map((day) => (
+                <View key={day} style={styles.dayCard}>
+                  <View style={styles.dayHeader}>
+                    <Text style={styles.dayTitle}>{dayLabels[day]}</Text>
+                    <Pressable onPress={() => addMechanicSlot(day)} style={styles.smallActionButton}>
+                      <Text style={styles.smallActionText}>+ Créneau</Text>
+                    </Pressable>
+                  </View>
+
+                  {openingHours[day].length === 0 ? (
+                    <Text style={styles.closedLabel}>Fermé</Text>
+                  ) : (
+                    openingHours[day].map((slot, slotIndex) => (
+                      <View key={`${day}-${slotIndex}`} style={styles.slotRow}>
+                        <View style={styles.timeSelectGroup}>
+                          <Text style={styles.timeLabel}>Ouverture</Text>
+                          <View style={styles.timeSelector}>
+                            <Pressable
+                              onPress={() =>
+                                updateMechanicSlot(day, slotIndex, 'open', getShiftedTime(slot.open, 'prev'))
+                              }
+                              style={styles.timeShiftButton}
+                            >
+                              <Text style={styles.timeShiftText}>-</Text>
+                            </Pressable>
+                            <Text style={styles.timeValue}>{slot.open}</Text>
+                            <Pressable
+                              onPress={() =>
+                                updateMechanicSlot(day, slotIndex, 'open', getShiftedTime(slot.open, 'next'))
+                              }
+                              style={styles.timeShiftButton}
+                            >
+                              <Text style={styles.timeShiftText}>+</Text>
+                            </Pressable>
+                          </View>
+                        </View>
+
+                        <View style={styles.timeSelectGroup}>
+                          <Text style={styles.timeLabel}>Fermeture</Text>
+                          <View style={styles.timeSelector}>
+                            <Pressable
+                              onPress={() =>
+                                updateMechanicSlot(day, slotIndex, 'close', getShiftedTime(slot.close, 'prev'))
+                              }
+                              style={styles.timeShiftButton}
+                            >
+                              <Text style={styles.timeShiftText}>-</Text>
+                            </Pressable>
+                            <Text style={styles.timeValue}>{slot.close}</Text>
+                            <Pressable
+                              onPress={() =>
+                                updateMechanicSlot(day, slotIndex, 'close', getShiftedTime(slot.close, 'next'))
+                              }
+                              style={styles.timeShiftButton}
+                            >
+                              <Text style={styles.timeShiftText}>+</Text>
+                            </Pressable>
+                          </View>
+                        </View>
+
+                        <Pressable onPress={() => removeMechanicSlot(day, slotIndex)} style={styles.removeSlotButton}>
+                          <Text style={styles.removeSlotText}>Supprimer</Text>
+                        </Pressable>
+                      </View>
+                    ))
+                  )}
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {mechanicStep === 'services' ? (
+            <View style={styles.servicesContainer}>
+              <View style={styles.servicesHeader}>
+                <Text style={styles.hoursTitle}>Prestations</Text>
+                <Pressable onPress={addServiceCategory} style={styles.smallActionButton}>
+                  <Text style={styles.smallActionText}>+ Catégorie</Text>
+                </Pressable>
+              </View>
+
+              {services.map((category, categoryIndex) => (
+                <View key={`category-${categoryIndex}`} style={styles.dayCard}>
+                  <TextInput
+                    value={category.categoryName}
+                    onChangeText={(value) => updateServiceCategoryName(categoryIndex, value)}
+                    placeholder="Nom de la catégorie (ex: vidange)"
+                    style={styles.input}
+                  />
+
+                  {category.services.map((service, serviceIndex) => (
+                    <View key={`service-${categoryIndex}-${serviceIndex}`} style={styles.serviceInputRow}>
+                      <TextInput
+                        value={service.serviceName}
+                        onChangeText={(value) =>
+                          updateServiceInCategory(categoryIndex, serviceIndex, 'serviceName', value)
+                        }
+                        placeholder="Nom prestation"
+                        style={[styles.input, styles.serviceNameInput]}
+                      />
+                      <TextInput
+                        value={service.price}
+                        onChangeText={(value) => updateServiceInCategory(categoryIndex, serviceIndex, 'price', value)}
+                        placeholder="Prix"
+                        keyboardType="decimal-pad"
+                        style={[styles.input, styles.servicePriceInput]}
+                      />
+                      <Pressable
+                        onPress={() => removeServiceFromCategory(categoryIndex, serviceIndex)}
+                        style={styles.removeServiceButton}
+                      >
+                        <Text style={styles.removeSlotText}>-</Text>
                       </Pressable>
                     </View>
+                  ))}
 
-                    {openingHours[day].length === 0 ? (
-                      <Text style={styles.closedLabel}>Fermé</Text>
-                    ) : (
-                      openingHours[day].map((slot, slotIndex) => (
-                        <View key={`${day}-${slotIndex}`} style={styles.slotRow}>
-                          <View style={styles.timeSelectGroup}>
-                            <Text style={styles.timeLabel}>Ouverture</Text>
-                            <View style={styles.timeSelector}>
-                              <Pressable
-                                onPress={() =>
-                                  updateMechanicSlot(
-                                    day,
-                                    slotIndex,
-                                    'open',
-                                    getShiftedTime(slot.open, 'prev'),
-                                  )
-                                }
-                                style={styles.timeShiftButton}
-                              >
-                                <Text style={styles.timeShiftText}>-</Text>
-                              </Pressable>
-                              <Text style={styles.timeValue}>{slot.open}</Text>
-                              <Pressable
-                                onPress={() =>
-                                  updateMechanicSlot(
-                                    day,
-                                    slotIndex,
-                                    'open',
-                                    getShiftedTime(slot.open, 'next'),
-                                  )
-                                }
-                                style={styles.timeShiftButton}
-                              >
-                                <Text style={styles.timeShiftText}>+</Text>
-                              </Pressable>
-                            </View>
-                          </View>
-
-                          <View style={styles.timeSelectGroup}>
-                            <Text style={styles.timeLabel}>Fermeture</Text>
-                            <View style={styles.timeSelector}>
-                              <Pressable
-                                onPress={() =>
-                                  updateMechanicSlot(
-                                    day,
-                                    slotIndex,
-                                    'close',
-                                    getShiftedTime(slot.close, 'prev'),
-                                  )
-                                }
-                                style={styles.timeShiftButton}
-                              >
-                                <Text style={styles.timeShiftText}>-</Text>
-                              </Pressable>
-                              <Text style={styles.timeValue}>{slot.close}</Text>
-                              <Pressable
-                                onPress={() =>
-                                  updateMechanicSlot(
-                                    day,
-                                    slotIndex,
-                                    'close',
-                                    getShiftedTime(slot.close, 'next'),
-                                  )
-                                }
-                                style={styles.timeShiftButton}
-                              >
-                                <Text style={styles.timeShiftText}>+</Text>
-                              </Pressable>
-                            </View>
-                          </View>
-
-                          <Pressable
-                            onPress={() => removeMechanicSlot(day, slotIndex)}
-                            style={styles.removeSlotButton}
-                          >
-                            <Text style={styles.removeSlotText}>Supprimer</Text>
-                          </Pressable>
-                        </View>
-                      ))
-                    )}
+                  <View style={styles.serviceActionsRow}>
+                    <Pressable onPress={() => addServiceToCategory(categoryIndex)} style={styles.smallActionButton}>
+                      <Text style={styles.smallActionText}>+ Prestation</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => removeServiceCategory(categoryIndex)}
+                      style={styles.removeCategoryButton}
+                    >
+                      <Text style={styles.removeSlotText}>Supprimer catégorie</Text>
+                    </Pressable>
                   </View>
-                ))}
-              </View>
-            </>
-          ) : (
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {mechanicStep === 'credentials' ? (
             <>
               <TextInput
                 value={email}
@@ -560,7 +818,7 @@ export function RegisterScreen({ navigation }: Props) {
                 style={styles.input}
               />
             </>
-          )}
+          ) : null}
         </>
       )}
 
@@ -568,7 +826,7 @@ export function RegisterScreen({ navigation }: Props) {
 
       <Pressable onPress={onSubmit} disabled={isSubmitting} style={styles.submitButton}>
         <Text style={styles.submitText}>
-          {role === 'mechanic' && mechanicStep === 'garage'
+          {role === 'mechanic' && mechanicStep !== 'credentials'
             ? 'Continuer'
             : isSubmitting
               ? 'Creating...'
@@ -643,9 +901,6 @@ const styles = StyleSheet.create({
     borderColor: '#2563eb',
     backgroundColor: '#dbeafe',
   },
-  stepButtonDisabled: {
-    opacity: 0.6,
-  },
   stepButtonText: {
     color: '#334155',
     fontWeight: '600',
@@ -667,6 +922,14 @@ const styles = StyleSheet.create({
   },
   hoursContainer: {
     gap: 8,
+  },
+  servicesContainer: {
+    gap: 8,
+  },
+  servicesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   hoursTitle: {
     fontWeight: '700',
@@ -750,6 +1013,36 @@ const styles = StyleSheet.create({
   },
   removeSlotButton: {
     alignSelf: 'flex-end',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  serviceInputRow: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  serviceNameInput: {
+    flex: 1,
+  },
+  servicePriceInput: {
+    width: 90,
+  },
+  removeServiceButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fee2e2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  serviceActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  removeCategoryButton: {
     paddingHorizontal: 10,
     paddingVertical: 6,
   },

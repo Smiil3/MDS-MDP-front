@@ -1,5 +1,5 @@
 import { apiGet } from './httpClient';
-import { NearbyGaragesResponse } from '../../types/garage';
+import { GarageCard, GarageDetailsResponse, NearbyGaragesResponse } from '../../types/garage';
 
 type GetNearbyGaragesParams = {
   lat?: number;
@@ -29,4 +29,9 @@ export async function getNearbyGarages(
 
   const path = `/api/garages/nearby?${query.toString()}`;
   return apiGet<NearbyGaragesResponse>(path);
+}
+
+export async function getGarageDetails(garageId: number): Promise<GarageCard> {
+  const response = await apiGet<GarageDetailsResponse>(`/api/garages/${garageId}`);
+  return 'garage' in response ? response.garage : response;
 }

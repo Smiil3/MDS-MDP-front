@@ -47,6 +47,13 @@ export type MechanicOpeningHours = {
   sun: MechanicOpeningHourSlot[];
 };
 
+export type MechanicService = {
+  serviceName: string;
+  price: number;
+};
+
+export type MechanicServiceCategory = Record<string, MechanicService[]>;
+
 export type MechanicRegisterPayload = {
   role: 'mechanic';
   email: string;
@@ -58,6 +65,7 @@ export type MechanicRegisterPayload = {
   description?: string;
   image_url?: string;
   opening_hours: MechanicOpeningHours;
+  services: MechanicServiceCategory[];
   siret: string;
 };
 
