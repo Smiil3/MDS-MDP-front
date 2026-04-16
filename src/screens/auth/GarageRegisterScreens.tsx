@@ -26,6 +26,8 @@ const dayLabels: Record<(typeof dayKeys)[number], string> = {
 };
 
 const hhmmPattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
+const createDraftId = (): string =>
+  `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
 function toMinutes(value: string): number | null {
   if (!hhmmPattern.test(value)) {
@@ -71,19 +73,23 @@ function useGarageValidation() {
         !garage.address.trim() || !/^\d{5}$/.test(garage.zipCode) || !garage.city.trim()
           ? 'Adresse, code postal (5 chiffres) et ville sont requis.'
           : null,
-      servicesError:
-        garage.services.length === 0 ||
-        garage.services.some((service) => {
-          const price = Number(service.price);
-          return (
-            !service.category.trim() ||
-            !service.serviceName.trim() ||
-            !Number.isFinite(price) ||
-            price <= 0
-          );
-        })
-          ? 'Renseigne au moins un service valide (catégorie, prestation, prix > 0).'
-          : null,
+      servicesError: (() => {
+        if (garage.services.length === 0) {
+          return 'Ajoute au moins une catégorie et une prestation.';
+        }
+        const hasInvalidCategory = garage.services.some(
+          (category) => !category.category.trim() || category.prestations.length === 0,
+        );
+        const hasInvalidPrestation = garage.services.some((category) =>
+          category.prestations.some((prestation) => {
+            const price = Number(prestation.price);
+            return !prestation.serviceName.trim() || !Number.isFinite(price) || price <= 0;
+          }),
+        );
+        return hasInvalidCategory || hasInvalidPrestation
+          ? 'Renseigne chaque catégorie avec au moins une prestation valide (nom + prix > 0).'
+          : null;
+      })(),
       hoursError: dayKeys.some((day) => {
         const slots = garage.openingHours[day];
         const hasInvalidRange = slots.some((slot) => {
@@ -335,28 +341,90 @@ export function RegisterGarageServicesScreen({ navigation }: ServicesProps) {
   const [error, setError] = useState<string | null>(null);
   const { servicesError } = useGarageValidation();
 
-  const onUpdateService = (
-    index: number,
-    field: 'category' | 'serviceName' | 'price',
-    value: string,
-  ) => {
-    const services = garage.services.map((service, currentIndex) =>
-      currentIndex === index ? { ...service, [field]: value } : service,
+  const onUpdateCategory = (categoryId: string, value: string) => {
+    const services = garage.services.map((category) =>
+      category.id === categoryId ? { ...category, category: value } : category,
     );
     setGarage({ services });
   };
 
-  const onAddService = () => {
+  const onUpdatePrestation = (
+    categoryId: string,
+    prestationId: string,
+    field: 'serviceName' | 'price',
+    value: string,
+  ) => {
+    const services = garage.services.map((category) =>
+      category.id === categoryId
+        ? {
+            ...category,
+            prestations: category.prestations.map((prestation) =>
+              prestation.id === prestationId ? { ...prestation, [field]: value } : prestation,
+            ),
+          }
+        : category,
+    );
+    setGarage({ services });
+  };
+
+  const onAddCategory = () => {
     setError(null);
     setGarage({
-      services: [...garage.services, { category: '', serviceName: '', price: '' }],
+      services: [
+        ...garage.services,
+        {
+          id: createDraftId(),
+          category: '',
+          prestations: [{ id: createDraftId(), serviceName: '', price: '' }],
+        },
+      ],
     });
   };
 
-  const onRemoveService = (index: number) => {
-    const services = garage.services.filter((_, currentIndex) => currentIndex !== index);
+  const onRemoveCategory = (categoryId: string) => {
+    const services = garage.services.filter((category) => category.id !== categoryId);
     setGarage({
-      services: services.length > 0 ? services : [{ category: '', serviceName: '', price: '' }],
+      services:
+        services.length > 0
+          ? services
+          : [
+              {
+                id: createDraftId(),
+                category: '',
+                prestations: [{ id: createDraftId(), serviceName: '', price: '' }],
+              },
+            ],
+    });
+  };
+
+  const onAddPrestation = (categoryId: string) => {
+    const services = garage.services.map((category) =>
+      category.id === categoryId
+        ? {
+            ...category,
+            prestations: [
+              ...category.prestations,
+              { id: createDraftId(), serviceName: '', price: '' },
+            ],
+          }
+        : category,
+    );
+    setGarage({ services });
+  };
+
+  const onRemovePrestation = (categoryId: string, prestationId: string) => {
+    const services = garage.services.map((category) =>
+      category.id === categoryId
+        ? {
+            ...category,
+            prestations: category.prestations.filter(
+              (prestation) => prestation.id !== prestationId,
+            ),
+          }
+        : category,
+    );
+    setGarage({
+      services,
     });
   };
 
@@ -376,48 +444,64 @@ export function RegisterGarageServicesScreen({ navigation }: ServicesProps) {
       canGoBack
       onGoBack={() => navigation.goBack()}
     >
-      {garage.services.map((service, index) => (
-        <View key={`${index}-${service.category}-${service.serviceName}`} style={styles.serviceCard}>
+      {garage.services.map((category, categoryIndex) => (
+        <View key={category.id} style={styles.serviceCard}>
           <View style={styles.serviceHeader}>
-            <Text style={styles.serviceTitle}>Service {index + 1}</Text>
+            <Text style={styles.serviceTitle}>Catégorie {categoryIndex + 1}</Text>
             {garage.services.length > 1 ? (
-              <Pressable onPress={() => onRemoveService(index)} style={styles.linkButton}>
+              <Pressable onPress={() => onRemoveCategory(category.id)} style={styles.linkButton}>
                 <Text style={styles.linkButtonText}>Supprimer</Text>
               </Pressable>
             ) : null}
           </View>
           <LabeledInput
             label="Catégorie"
-            value={service.category}
+            value={category.category}
             onChangeText={(value) => {
               setError(null);
-              onUpdateService(index, 'category', value);
+              onUpdateCategory(category.id, value);
             }}
             placeholder="Ex: Vidange"
           />
-          <LabeledInput
-            label="Prestation"
-            value={service.serviceName}
-            onChangeText={(value) => {
-              setError(null);
-              onUpdateService(index, 'serviceName', value);
-            }}
-            placeholder="Ex: Forfait vidange"
-          />
-          <LabeledInput
-            label="Prix"
-            value={service.price}
-            onChangeText={(value) => {
-              setError(null);
-              onUpdateService(index, 'price', value);
-            }}
-            keyboardType="decimal-pad"
-            placeholder="49.90"
-          />
+          {category.prestations.map((prestation, prestationIndex) => (
+            <View key={prestation.id} style={styles.prestationCard}>
+              <View style={styles.slotHeader}>
+                <Text style={styles.slotTitle}>Prestation {prestationIndex + 1}</Text>
+                <Pressable
+                  onPress={() => onRemovePrestation(category.id, prestation.id)}
+                  style={styles.linkButton}
+                >
+                  <Text style={styles.linkButtonText}>Supprimer</Text>
+                </Pressable>
+              </View>
+              <LabeledInput
+                label="Prestation"
+                value={prestation.serviceName}
+                onChangeText={(value) => {
+                  setError(null);
+                  onUpdatePrestation(category.id, prestation.id, 'serviceName', value);
+                }}
+                placeholder="Ex: Forfait vidange"
+              />
+              <LabeledInput
+                label="Prix"
+                value={prestation.price}
+                onChangeText={(value) => {
+                  setError(null);
+                  onUpdatePrestation(category.id, prestation.id, 'price', value);
+                }}
+                keyboardType="decimal-pad"
+                placeholder="49.90"
+              />
+            </View>
+          ))}
+          <Pressable onPress={() => onAddPrestation(category.id)} style={styles.inlineSecondaryButton}>
+            <Text style={styles.linkButtonText}>Ajouter une prestation</Text>
+          </Pressable>
         </View>
       ))}
-      <Pressable onPress={onAddService} style={authSharedStyles.secondaryButton}>
-        <Text style={authSharedStyles.secondaryButtonText}>Ajouter un service</Text>
+      <Pressable onPress={onAddCategory} style={authSharedStyles.secondaryButton}>
+        <Text style={authSharedStyles.secondaryButtonText}>Ajouter une catégorie</Text>
       </Pressable>
       {error ? <Text style={authSharedStyles.errorText}>{error}</Text> : null}
       <Pressable onPress={onNext} style={authSharedStyles.primaryButton}>
@@ -761,6 +845,23 @@ const styles = StyleSheet.create({
   linkButtonText: {
     color: '#2563eb',
     fontWeight: '600',
+  },
+  inlineSecondaryButton: {
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    borderRadius: 8,
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  prestationCard: {
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 8,
+    backgroundColor: '#f8fafc',
+    padding: 10,
+    gap: 6,
   },
   closedText: {
     color: '#64748b',
