@@ -12,10 +12,19 @@ type DriverDraft = {
   birthDate: string;
 };
 
-export type GarageServiceDraft = {
-  category: string;
+const createDraftId = (): string =>
+  `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+export type GaragePrestationDraft = {
+  id: string;
   serviceName: string;
   price: string;
+};
+
+export type GarageServiceDraft = {
+  id: string;
+  category: string;
+  prestations: GaragePrestationDraft[];
 };
 
 type GarageDraft = {
@@ -65,10 +74,16 @@ const createDriverDraft = (): DriverDraft => ({
   birthDate: '',
 });
 
-const createGarageServiceDraft = (): GarageServiceDraft => ({
-  category: '',
+const createGaragePrestationDraft = (): GaragePrestationDraft => ({
+  id: createDraftId(),
   serviceName: '',
   price: '',
+});
+
+const createGarageServiceDraft = (): GarageServiceDraft => ({
+  id: createDraftId(),
+  category: '',
+  prestations: [createGaragePrestationDraft()],
 });
 
 const createGarageDraft = (): GarageDraft => ({
@@ -109,16 +124,21 @@ export function AuthOnboardingProvider({ children }: PropsWithChildren) {
       resetGarage: () => setGarageState(createGarageDraft()),
       toGarageServicesPayload: () => {
         const grouped = new Map<string, { serviceName: string; price: number }[]>();
-        for (const service of garage.services) {
-          const category = service.category.trim();
-          const serviceName = service.serviceName.trim();
-          const price = Number(service.price);
-          if (!category || !serviceName || !Number.isFinite(price) || price <= 0) {
+        for (const serviceCategory of garage.services) {
+          const category = serviceCategory.category.trim();
+          if (!category) {
             continue;
           }
-          const current = grouped.get(category) ?? [];
-          current.push({ serviceName, price });
-          grouped.set(category, current);
+          for (const prestation of serviceCategory.prestations) {
+            const serviceName = prestation.serviceName.trim();
+            const price = Number(prestation.price);
+            if (!serviceName || !Number.isFinite(price) || price <= 0) {
+              continue;
+            }
+            const current = grouped.get(category) ?? [];
+            current.push({ serviceName, price });
+            grouped.set(category, current);
+          }
         }
         return Array.from(grouped.entries()).map(([category, services]) => ({
           [category]: services,
