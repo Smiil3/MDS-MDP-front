@@ -66,7 +66,7 @@ const normalizeServices = (services: GarageServices | null): Array<{ category: s
   );
 };
 
-export function GarageDetailsScreen({ route }: Props) {
+export function GarageDetailsScreen({ route, navigation }: Props) {
   const { garageId } = route.params;
 
   const [garage, setGarage] = useState<GarageCard | null>(null);
@@ -169,7 +169,21 @@ export function GarageDetailsScreen({ route }: Props) {
         )}
       </View>
 
-      <Pressable onPress={() => {}} style={styles.reserveButton}>
+      <Pressable
+        onPress={() => {
+          navigation.navigate('BookingScreen', {
+            garageId: garage.id,
+            mechanicId: garage.mechanicId,
+            garageName: garage.name,
+            garageAddress: garage.address,
+            garageCity: garage.city,
+            garageImageUrl: garage.imageUrl,
+            services: garage.services,
+            openingHours: garage.openingHours,
+          });
+        }}
+        style={styles.reserveButton}
+      >
         <Text style={styles.reserveButtonText}>Réserver</Text>
       </Pressable>
     </ScrollView>

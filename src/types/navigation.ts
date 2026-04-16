@@ -1,5 +1,6 @@
 import { AuthRole } from './auth';
 import { NavigatorScreenParams } from '@react-navigation/native';
+import { GarageServices, OpeningHours } from './garage';
 
 export type AuthStackParamList = {
   OnboardingWelcome: undefined;
@@ -23,6 +24,16 @@ export type AuthStackParamList = {
 export type HomeStackParamList = {
   HomeList: undefined;
   GarageDetails: { garageId: number };
+  BookingScreen: {
+    garageId: number;
+    mechanicId: number;
+    garageName: string;
+    garageAddress: string;
+    garageCity: string;
+    garageImageUrl: string | null;
+    services: GarageServices | null;
+    openingHours: OpeningHours | null;
+  };
 };
 
 export type AppTabParamList = {

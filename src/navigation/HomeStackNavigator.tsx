@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
+import { BookingScreen } from '../screens/app/BookingScreen';
 import { GarageDetailsScreen } from '../screens/app/GarageDetailsScreen';
 import { HomeScreen } from '../screens/app/HomeScreen';
 import { HomeStackParamList } from '../types/navigation';
@@ -11,6 +12,7 @@ export function HomeStackNavigator() {
     <Stack.Navigator>
       <Stack.Screen name="HomeList" component={HomeScreen} options={{ title: 'Accueil' }} />
       <Stack.Screen name="GarageDetails" component={GarageDetailsScreen} options={{ title: 'Détails garage' }} />
+      <Stack.Screen name="BookingScreen" component={BookingScreen} options={{ title: 'Réservation' }} />
     </Stack.Navigator>
   );
 }
