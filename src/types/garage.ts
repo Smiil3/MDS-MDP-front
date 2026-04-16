@@ -24,6 +24,7 @@ export type GarageServices = GarageServiceCategory[];
 
 export type GarageCard = {
   id: number;
+  mechanicId: number;
   name: string;
   city: string;
   address: string;
