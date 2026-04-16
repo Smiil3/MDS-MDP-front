@@ -1,8 +1,23 @@
+import { AuthRole } from './auth';
 import { NavigatorScreenParams } from '@react-navigation/native';
 
 export type AuthStackParamList = {
-  Login: undefined;
-  Register: undefined;
+  OnboardingWelcome: undefined;
+  LoginRoleSelect: undefined;
+  Login: { role: AuthRole };
+  RegisterAccountType: undefined;
+  RegisterDriverEmail: undefined;
+  RegisterDriverPassword: undefined;
+  RegisterDriverIdentity: undefined;
+  RegisterDriverPhone: undefined;
+  RegisterDriverBirthDate: undefined;
+  RegisterDriverReview: undefined;
+  RegisterGarageInfo: undefined;
+  RegisterGarageAddress: undefined;
+  RegisterGarageServices: undefined;
+  RegisterGarageHours: undefined;
+  RegisterGarageCredentials: undefined;
+  RegisterGarageReview: undefined;
 };
 
 export type HomeStackParamList = {

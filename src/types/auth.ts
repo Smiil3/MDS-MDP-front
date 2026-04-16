@@ -29,7 +29,7 @@ export type DriverRegisterPayload = {
   first_name: string;
   phone: string;
   birth_date: string;
-  id_subscription: number;
+  id_subscription?: number;
 };
 
 export type MechanicOpeningHourSlot = {

@@ -9,13 +9,13 @@ import { AuthStackParamList } from '../../types/navigation';
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 const roleLabels: Record<AuthRole, string> = {
-  driver: 'Driver',
-  mechanic: 'Mechanic',
+  driver: 'Particulier',
+  mechanic: 'Garage',
 };
 
-export function LoginScreen({ navigation }: Props) {
+export function LoginScreen({ navigation, route }: Props) {
   const { login } = useAuth();
-  const [role, setRole] = useState<AuthRole>('driver');
+  const role = route.params.role;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -57,21 +57,7 @@ export function LoginScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Welcome back</Text>
-      <Text style={styles.subtitle}>Sign in as driver or mechanic.</Text>
-
-      <View style={styles.roleRow}>
-        {(Object.keys(roleLabels) as AuthRole[]).map((value) => (
-          <Pressable
-            key={value}
-            onPress={() => setRole(value)}
-            style={[styles.roleButton, role === value && styles.roleButtonActive]}
-          >
-            <Text style={[styles.roleText, role === value && styles.roleTextActive]}>
-              {roleLabels[value]}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <Text style={styles.subtitle}>Connexion en tant que {roleLabels[role]}.</Text>
 
       <TextInput
         value={email}
@@ -95,7 +81,7 @@ export function LoginScreen({ navigation }: Props) {
         <Text style={styles.submitText}>{isSubmitting ? 'Signing in...' : 'Sign in'}</Text>
       </Pressable>
 
-      <Pressable onPress={() => navigation.navigate('Register')}>
+      <Pressable onPress={() => navigation.navigate('RegisterAccountType')}>
         <Text style={styles.link}>No account? Create one</Text>
       </Pressable>
     </View>
@@ -118,30 +104,6 @@ const styles = StyleSheet.create({
   subtitle: {
     color: '#334155',
     marginBottom: 8,
-  },
-  roleRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  roleButton: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 10,
-    paddingVertical: 10,
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  roleButtonActive: {
-    backgroundColor: '#dbeafe',
-    borderColor: '#3b82f6',
-  },
-  roleText: {
-    color: '#334155',
-    fontWeight: '600',
-  },
-  roleTextActive: {
-    color: '#1d4ed8',
   },
   input: {
     borderWidth: 1,
