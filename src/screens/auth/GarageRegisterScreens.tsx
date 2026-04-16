@@ -25,6 +25,38 @@ const dayLabels: Record<(typeof dayKeys)[number], string> = {
   sun: 'Dimanche',
 };
 
+const hhmmPattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+function toMinutes(value: string): number | null {
+  if (!hhmmPattern.test(value)) {
+    return null;
+  }
+  const [hours, minutes] = value.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+function hasSlotsOverlap(slots: { open: string; close: string }[]): boolean {
+  const ranges = slots
+    .map((slot) => {
+      const open = toMinutes(slot.open);
+      const close = toMinutes(slot.close);
+      if (open === null || close === null) {
+        return null;
+      }
+      return { open, close };
+    })
+    .filter((item): item is { open: number; close: number } => item !== null)
+    .sort((a, b) => a.open - b.open);
+
+  for (let index = 1; index < ranges.length; index += 1) {
+    if (ranges[index - 1].close > ranges[index].open) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function useGarageValidation() {
   const { garage } = useAuthOnboarding();
   return useMemo(
@@ -40,16 +72,28 @@ function useGarageValidation() {
           ? 'Adresse, code postal (5 chiffres) et ville sont requis.'
           : null,
       servicesError:
-        !garage.serviceCategory.trim() ||
-        !garage.serviceName.trim() ||
-        !Number.isFinite(Number(garage.servicePrice)) ||
-        Number(garage.servicePrice) <= 0
-          ? 'Renseigne une catégorie, une prestation et un prix valide.'
+        garage.services.length === 0 ||
+        garage.services.some((service) => {
+          const price = Number(service.price);
+          return (
+            !service.category.trim() ||
+            !service.serviceName.trim() ||
+            !Number.isFinite(price) ||
+            price <= 0
+          );
+        })
+          ? 'Renseigne au moins un service valide (catégorie, prestation, prix > 0).'
           : null,
-      hoursError: dayKeys.some((day) =>
-        garage.openingHours[day].some((slot) => slot.open >= slot.close),
-      )
-        ? 'Les horaires doivent avoir une ouverture avant la fermeture.'
+      hoursError: dayKeys.some((day) => {
+        const slots = garage.openingHours[day];
+        const hasInvalidRange = slots.some((slot) => {
+          const open = toMinutes(slot.open);
+          const close = toMinutes(slot.close);
+          return open === null || close === null || open >= close;
+        });
+        return hasInvalidRange || hasSlotsOverlap(slots);
+      })
+        ? 'Les horaires doivent être au format HH:MM, sans chevauchement, et avec ouverture avant fermeture.'
         : null,
       credentialsError:
         !garage.email.trim()
@@ -291,6 +335,31 @@ export function RegisterGarageServicesScreen({ navigation }: ServicesProps) {
   const [error, setError] = useState<string | null>(null);
   const { servicesError } = useGarageValidation();
 
+  const onUpdateService = (
+    index: number,
+    field: 'category' | 'serviceName' | 'price',
+    value: string,
+  ) => {
+    const services = garage.services.map((service, currentIndex) =>
+      currentIndex === index ? { ...service, [field]: value } : service,
+    );
+    setGarage({ services });
+  };
+
+  const onAddService = () => {
+    setError(null);
+    setGarage({
+      services: [...garage.services, { category: '', serviceName: '', price: '' }],
+    });
+  };
+
+  const onRemoveService = (index: number) => {
+    const services = garage.services.filter((_, currentIndex) => currentIndex !== index);
+    setGarage({
+      services: services.length > 0 ? services : [{ category: '', serviceName: '', price: '' }],
+    });
+  };
+
   const onNext = () => {
     if (servicesError) {
       setError(servicesError);
@@ -307,34 +376,49 @@ export function RegisterGarageServicesScreen({ navigation }: ServicesProps) {
       canGoBack
       onGoBack={() => navigation.goBack()}
     >
-      <LabeledInput
-        label="Catégorie"
-        value={garage.serviceCategory}
-        onChangeText={(value) => {
-          setError(null);
-          setGarage({ serviceCategory: value });
-        }}
-        placeholder="Ex: Vidange"
-      />
-      <LabeledInput
-        label="Prestation"
-        value={garage.serviceName}
-        onChangeText={(value) => {
-          setError(null);
-          setGarage({ serviceName: value });
-        }}
-        placeholder="Ex: Forfait vidange"
-      />
-      <LabeledInput
-        label="Prix"
-        value={garage.servicePrice}
-        onChangeText={(value) => {
-          setError(null);
-          setGarage({ servicePrice: value });
-        }}
-        keyboardType="decimal-pad"
-        placeholder="49.90"
-      />
+      {garage.services.map((service, index) => (
+        <View key={`${index}-${service.category}-${service.serviceName}`} style={styles.serviceCard}>
+          <View style={styles.serviceHeader}>
+            <Text style={styles.serviceTitle}>Service {index + 1}</Text>
+            {garage.services.length > 1 ? (
+              <Pressable onPress={() => onRemoveService(index)} style={styles.linkButton}>
+                <Text style={styles.linkButtonText}>Supprimer</Text>
+              </Pressable>
+            ) : null}
+          </View>
+          <LabeledInput
+            label="Catégorie"
+            value={service.category}
+            onChangeText={(value) => {
+              setError(null);
+              onUpdateService(index, 'category', value);
+            }}
+            placeholder="Ex: Vidange"
+          />
+          <LabeledInput
+            label="Prestation"
+            value={service.serviceName}
+            onChangeText={(value) => {
+              setError(null);
+              onUpdateService(index, 'serviceName', value);
+            }}
+            placeholder="Ex: Forfait vidange"
+          />
+          <LabeledInput
+            label="Prix"
+            value={service.price}
+            onChangeText={(value) => {
+              setError(null);
+              onUpdateService(index, 'price', value);
+            }}
+            keyboardType="decimal-pad"
+            placeholder="49.90"
+          />
+        </View>
+      ))}
+      <Pressable onPress={onAddService} style={authSharedStyles.secondaryButton}>
+        <Text style={authSharedStyles.secondaryButtonText}>Ajouter un service</Text>
+      </Pressable>
       {error ? <Text style={authSharedStyles.errorText}>{error}</Text> : null}
       <Pressable onPress={onNext} style={authSharedStyles.primaryButton}>
         <Text style={authSharedStyles.primaryButtonText}>Continuer</Text>
@@ -350,13 +434,49 @@ export function RegisterGarageHoursScreen({ navigation }: HoursProps) {
   const [error, setError] = useState<string | null>(null);
   const { hoursError } = useGarageValidation();
 
-  const onUpdateHour = (day: (typeof dayKeys)[number], field: 'open' | 'close', value: string) => {
+  const onUpdateHour = (
+    day: (typeof dayKeys)[number],
+    slotIndex: number,
+    field: 'open' | 'close',
+    value: string,
+  ) => {
     const currentDay = garage.openingHours[day];
-    const slot = currentDay[0] ?? { open: '08:00', close: '18:00' };
+    const nextDay = currentDay.map((slot, index) =>
+      index === slotIndex ? { ...slot, [field]: value } : slot,
+    );
     setGarage({
       openingHours: {
         ...garage.openingHours,
-        [day]: [{ ...slot, [field]: value }],
+        [day]: nextDay,
+      },
+    });
+  };
+
+  const onAddHour = (day: (typeof dayKeys)[number]) => {
+    const currentDay = garage.openingHours[day];
+    setGarage({
+      openingHours: {
+        ...garage.openingHours,
+        [day]: [...currentDay, { open: '08:00', close: '18:00' }],
+      },
+    });
+  };
+
+  const onRemoveHour = (day: (typeof dayKeys)[number], slotIndex: number) => {
+    const currentDay = garage.openingHours[day];
+    setGarage({
+      openingHours: {
+        ...garage.openingHours,
+        [day]: currentDay.filter((_, index) => index !== slotIndex),
+      },
+    });
+  };
+
+  const onSetDayClosed = (day: (typeof dayKeys)[number]) => {
+    setGarage({
+      openingHours: {
+        ...garage.openingHours,
+        [day]: [],
       },
     });
   };
@@ -379,22 +499,43 @@ export function RegisterGarageHoursScreen({ navigation }: HoursProps) {
         onGoBack={() => navigation.goBack()}
       >
         {dayKeys.map((day) => {
-          const slot = garage.openingHours[day][0] ?? { open: '', close: '' };
+          const slots = garage.openingHours[day];
           return (
             <View key={day} style={styles.dayCard}>
-              <Text style={styles.dayTitle}>{dayLabels[day]}</Text>
-              <LabeledInput
-                label="Ouverture (HH:MM)"
-                value={slot.open}
-                onChangeText={(value) => onUpdateHour(day, 'open', value)}
-                placeholder="08:00"
-              />
-              <LabeledInput
-                label="Fermeture (HH:MM)"
-                value={slot.close}
-                onChangeText={(value) => onUpdateHour(day, 'close', value)}
-                placeholder="18:00"
-              />
+              <View style={styles.dayHeader}>
+                <Text style={styles.dayTitle}>{dayLabels[day]}</Text>
+                {slots.length > 0 ? (
+                  <Pressable onPress={() => onSetDayClosed(day)} style={styles.linkButton}>
+                    <Text style={styles.linkButtonText}>Marquer fermé</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+              {slots.length === 0 ? <Text style={styles.closedText}>Fermé</Text> : null}
+              {slots.map((slot, slotIndex) => (
+                <View key={`${day}-${slotIndex}`} style={styles.slotCard}>
+                  <View style={styles.slotHeader}>
+                    <Text style={styles.slotTitle}>Créneau {slotIndex + 1}</Text>
+                    <Pressable onPress={() => onRemoveHour(day, slotIndex)} style={styles.linkButton}>
+                      <Text style={styles.linkButtonText}>Supprimer</Text>
+                    </Pressable>
+                  </View>
+                  <LabeledInput
+                    label="Ouverture (HH:MM)"
+                    value={slot.open}
+                    onChangeText={(value) => onUpdateHour(day, slotIndex, 'open', value)}
+                    placeholder="08:00"
+                  />
+                  <LabeledInput
+                    label="Fermeture (HH:MM)"
+                    value={slot.close}
+                    onChangeText={(value) => onUpdateHour(day, slotIndex, 'close', value)}
+                    placeholder="18:00"
+                  />
+                </View>
+              ))}
+              <Pressable onPress={() => onAddHour(day)} style={authSharedStyles.secondaryButton}>
+                <Text style={authSharedStyles.secondaryButtonText}>Ajouter un créneau</Text>
+              </Pressable>
             </View>
           );
         })}
@@ -474,6 +615,7 @@ export function RegisterGarageReviewScreen({ navigation }: ReviewProps) {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const validation = useGarageValidation();
+  const servicesPayload = toGarageServicesPayload();
 
   const onSubmit = async () => {
     const firstError =
@@ -499,7 +641,7 @@ export function RegisterGarageReviewScreen({ navigation }: ReviewProps) {
       description: garage.description.trim() || undefined,
       image_url: garage.imageUrl.trim() || undefined,
       opening_hours: garage.openingHours,
-      services: toGarageServicesPayload(),
+      services: servicesPayload,
       siret: garage.siret,
     };
 
@@ -528,7 +670,32 @@ export function RegisterGarageReviewScreen({ navigation }: ReviewProps) {
       <Text>
         Ville: {garage.zipCode} {garage.city}
       </Text>
-      <Text>Service: {garage.serviceCategory} - {garage.serviceName} ({garage.servicePrice} EUR)</Text>
+      <Text style={styles.sectionTitle}>Services</Text>
+      {servicesPayload.map((categoryBlock) =>
+        Object.entries(categoryBlock).map(([category, services]) => (
+          <View key={category} style={styles.reviewBlock}>
+            <Text style={styles.reviewBlockTitle}>{category}</Text>
+            {services.map((service, index) => (
+              <Text key={`${category}-${service.serviceName}-${index}`}>
+                - {service.serviceName} ({service.price} EUR)
+              </Text>
+            ))}
+          </View>
+        )),
+      )}
+      <Text style={styles.sectionTitle}>Horaires</Text>
+      {dayKeys.map((day) => {
+        const slots = garage.openingHours[day];
+        const label =
+          slots.length === 0
+            ? 'Fermé'
+            : slots.map((slot) => `${slot.open}-${slot.close}`).join(', ');
+        return (
+          <Text key={`review-${day}`}>
+            {dayLabels[day]}: {label}
+          </Text>
+        );
+      })}
       <Text>Email: {garage.email}</Text>
       {error ? <Text style={authSharedStyles.errorText}>{error}</Text> : null}
       <Pressable onPress={onSubmit} disabled={isSubmitting} style={authSharedStyles.primaryButton}>
@@ -561,8 +728,71 @@ const styles = StyleSheet.create({
     padding: 12,
     gap: 8,
   },
+  dayHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   dayTitle: {
     color: '#0f172a',
+    fontWeight: '700',
+  },
+  serviceCard: {
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 10,
+    backgroundColor: '#fff',
+    padding: 12,
+    gap: 8,
+  },
+  serviceHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  serviceTitle: {
+    color: '#0f172a',
+    fontWeight: '700',
+  },
+  linkButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  linkButtonText: {
+    color: '#2563eb',
+    fontWeight: '600',
+  },
+  closedText: {
+    color: '#64748b',
+    fontStyle: 'italic',
+  },
+  slotCard: {
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 8,
+    backgroundColor: '#f8fafc',
+    padding: 10,
+    gap: 6,
+  },
+  slotHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  slotTitle: {
+    color: '#334155',
+    fontWeight: '700',
+  },
+  sectionTitle: {
+    color: '#0f172a',
+    fontWeight: '700',
+    marginTop: 8,
+  },
+  reviewBlock: {
+    gap: 2,
+  },
+  reviewBlockTitle: {
+    color: '#334155',
     fontWeight: '700',
   },
 });
