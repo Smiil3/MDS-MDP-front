@@ -108,4 +108,8 @@ export async function apiPost<T, B>(path: string, body: B): Promise<T> {
   return apiRequest<T>(path, { method: 'POST', body: JSON.stringify(body) });
 }
 
+export async function apiPatch<T, B>(path: string, body: B): Promise<T> {
+  return apiRequest<T>(path, { method: 'PATCH', body: JSON.stringify(body) });
+}
+
 export { ApiError };
