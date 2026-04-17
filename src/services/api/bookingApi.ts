@@ -44,14 +44,14 @@ type CreateBookingResponse = {
 
 export async function getBookingStatuses(): Promise<BookingStatus[]> {
   const response = await apiGet<BookingStatusesResponse>('/api/booking-statuses');
-  return response.statuses;
+  return response.statuses ?? [];
 }
 
 export async function getAvailableSlots(garageId: number, date: string): Promise<AvailableSlot[]> {
   const response = await apiGet<AvailableSlotsResponse>(
     `/api/garages/${garageId}/slots?date=${date}`,
   );
-  return response.slots;
+  return response.slots ?? [];
 }
 
 export async function createBooking(payload: CreateBookingPayload): Promise<Booking> {
