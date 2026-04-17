@@ -15,6 +15,7 @@ export type OpeningHours = Record<
 >;
 
 export type GarageService = {
+  id: number;
   serviceName: string;
   price: number;
 };

@@ -190,6 +190,18 @@ export function BookingScreen({ route, navigation }: Props) {
     return names;
   }, [selectedServiceKeys, categorizedServices]);
 
+  const selectedServiceIds = useMemo(() => {
+    const ids: number[] = [];
+    for (const key of selectedServiceKeys) {
+      const sepIdx = key.indexOf('::');
+      const category = key.slice(0, sepIdx);
+      const index = parseInt(key.slice(sepIdx + 2), 10);
+      const cat = categorizedServices.find((c) => c.category === category);
+      if (cat && cat.items[index]) ids.push(cat.items[index].id);
+    }
+    return ids;
+  }, [selectedServiceKeys, categorizedServices]);
+
   const toggleService = useCallback((key: string) => {
     setSelectedServiceKeys((prev) => {
       const next = new Set(prev);
@@ -225,11 +237,10 @@ export function BookingScreen({ route, navigation }: Props) {
     try {
       await createBooking({
         appointment_date: `${selectedDate}T${selectedSlot}:00`,
-        total_amount: totalPrice,
         id_mechanic: mechanicId,
         id_booking_status: pendingStatusId,
-        id_driver: user.id,
         id_vehicle: selectedVehicleId,
+        service_ids: selectedServiceIds,
       });
       setSubmitSuccess(true);
     } catch {
