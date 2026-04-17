@@ -12,11 +12,10 @@ export type AvailableSlot = {
 
 export type CreateBookingPayload = {
   appointment_date: string;
-  total_amount: number;
   id_mechanic: number;
   id_booking_status: number;
-  id_driver: number;
   id_vehicle: number;
+  service_ids: number[];
 };
 
 export type Booking = {
