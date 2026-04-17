@@ -173,7 +173,7 @@ export function GarageDetailsScreen({ route, navigation }: Props) {
         onPress={() => {
           navigation.navigate('BookingScreen', {
             garageId: garage.id,
-            mechanicId: garage.mechanicId,
+            mechanicId: garage.id,
             garageName: garage.name,
             garageAddress: garage.address,
             garageCity: garage.city,
