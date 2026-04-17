@@ -34,6 +34,7 @@ const DAY_JS_TO_KEY: Record<number, string> = {
 
 const WEEKDAY_SHORT = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 const MONTH_SHORT = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+const MONTH_FULL = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 
 const isClosedDay = (value: OpeningHours[string]): value is OpeningHoursClosed =>
   typeof value === 'object' && !Array.isArray(value) && value !== null && 'closed' in value;
@@ -55,11 +56,11 @@ const formatDate = (date: Date): string => {
   return `${y}-${m}-${d}`;
 };
 
-const generateNext14Days = (openingHours: OpeningHours | null): Date[] => {
+const generateNext2Months = (openingHours: OpeningHours | null): Date[] => {
   const days: Date[] = [];
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  for (let i = 0; i < 14; i++) {
+  for (let i = 0; i < 62; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
     if (isDayOpen(openingHours, d)) {
@@ -87,6 +88,11 @@ export function BookingScreen({ route, navigation }: Props) {
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [expandedMonths, setExpandedMonths] = useState<Set<string>>(() => {
+    const today = new Date();
+    const key = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    return new Set([key]);
+  });
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -141,7 +147,22 @@ export function BookingScreen({ route, navigation }: Props) {
     );
   }, [services]);
 
-  const availableDates = useMemo(() => generateNext14Days(openingHours), [openingHours]);
+  const availableDates = useMemo(() => generateNext2Months(openingHours), [openingHours]);
+
+  const datesByMonth = useMemo(() => {
+    const groups: { key: string; label: string; dates: Date[] }[] = [];
+    const map = new Map<string, Date[]>();
+    for (const d of availableDates) {
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (!map.has(key)) {
+        const dates: Date[] = [];
+        map.set(key, dates);
+        groups.push({ key, label: `${MONTH_FULL[d.getMonth()]} ${d.getFullYear()}`, dates });
+      }
+      map.get(key)!.push(d);
+    }
+    return groups;
+  }, [availableDates]);
 
   const totalPrice = useMemo(() => {
     let total = 0;
@@ -334,36 +355,59 @@ export function BookingScreen({ route, navigation }: Props) {
         <Text style={styles.sectionTitle}>Choisir une date</Text>
         {availableDates.length === 0 ? (
           <Text style={styles.emptyLabel}>
-            Aucune disponibilité dans les 14 prochains jours.
+            Aucune disponibilité dans les 2 prochains mois.
           </Text>
         ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalList}
-          >
-            {availableDates.map((date) => {
-              const dateStr = formatDate(date);
-              const selected = selectedDate === dateStr;
-              return (
+          datesByMonth.map((monthGroup) => {
+            const isExpanded = expandedMonths.has(monthGroup.key);
+            return (
+              <View key={monthGroup.key} style={styles.monthGroup}>
                 <Pressable
-                  key={dateStr}
-                  onPress={() => setSelectedDate(dateStr)}
-                  style={[styles.dateCard, selected && styles.cardSelected]}
+                  style={styles.monthHeader}
+                  onPress={() => {
+                    setExpandedMonths((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(monthGroup.key)) next.delete(monthGroup.key);
+                      else next.add(monthGroup.key);
+                      return next;
+                    });
+                  }}
                 >
-                  <Text style={[styles.dateWeekday, selected && styles.selectedSubText]}>
-                    {WEEKDAY_SHORT[date.getDay()]}
-                  </Text>
-                  <Text style={[styles.dateDay, selected && styles.selectedText]}>
-                    {date.getDate()}
-                  </Text>
-                  <Text style={[styles.dateMonth, selected && styles.selectedSubText]}>
-                    {MONTH_SHORT[date.getMonth()]}
-                  </Text>
+                  <Text style={styles.monthHeaderText}>{monthGroup.label}</Text>
+                  <Text style={styles.monthHeaderChevron}>{isExpanded ? '▲' : '▼'}</Text>
                 </Pressable>
-              );
-            })}
-          </ScrollView>
+                {isExpanded ? (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.horizontalList}
+                  >
+                    {monthGroup.dates.map((date) => {
+                      const dateStr = formatDate(date);
+                      const selected = selectedDate === dateStr;
+                      return (
+                        <Pressable
+                          key={dateStr}
+                          onPress={() => setSelectedDate(dateStr)}
+                          style={[styles.dateCard, selected && styles.cardSelected]}
+                        >
+                          <Text style={[styles.dateWeekday, selected && styles.selectedSubText]}>
+                            {WEEKDAY_SHORT[date.getDay()]}
+                          </Text>
+                          <Text style={[styles.dateDay, selected && styles.selectedText]}>
+                            {date.getDate()}
+                          </Text>
+                          <Text style={[styles.dateMonth, selected && styles.selectedSubText]}>
+                            {MONTH_SHORT[date.getMonth()]}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </ScrollView>
+                ) : null}
+              </View>
+            );
+          })
         )}
       </View>
 
@@ -621,6 +665,30 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     color: '#1d4ed8',
+  },
+
+  // Month accordion
+  monthGroup: {
+    gap: 8,
+  },
+  monthHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  monthHeaderText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1e293b',
+    textTransform: 'capitalize',
+  },
+  monthHeaderChevron: {
+    fontSize: 10,
+    color: '#64748b',
   },
 
   // Date cards
