@@ -1,4 +1,4 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { AuthStackParamList } from '../../types/navigation';
@@ -8,53 +8,66 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'OnboardingWelcome'>;
 
 export function OnboardingWelcomeScreen({ navigation }: Props) {
   return (
-    <View style={styles.container}>
-      <Image source={require('../../../assets/icon.png')} style={styles.logo} resizeMode="contain" />
-      <Text style={styles.title}>Bienvenue</Text>
-      <Text style={styles.subtitle}>
-        Trouve le bon garage ou inscris ton garage en quelques étapes.
-      </Text>
+    <ImageBackground
+      source={require('../../../assets/images/login.jpg')}
+      style={styles.background}
+      resizeMode="cover"
+    >
+      <View style={styles.overlay} />
+      <View style={styles.container}>
+        <Image source={require('../../../assets/images/logo-mecanoo.png')} style={styles.logo} resizeMode="contain" />
+        <Text style={styles.title}>Mecanoo</Text>
+        <Text style={styles.subtitle}>Trouve le garage de confiance le plus proche de chez toi.</Text>
 
-      <View style={styles.ctaStack}>
-        <Pressable
-          onPress={() => navigation.navigate('LoginRoleSelect')}
-          style={authSharedStyles.primaryButton}
-        >
-          <Text style={authSharedStyles.primaryButtonText}>Se connecter</Text>
-        </Pressable>
+        <View style={styles.ctaStack}>
+          <Pressable
+            onPress={() => navigation.navigate('LoginRoleSelect')}
+            style={[authSharedStyles.primaryButton, styles.loginButton]}
+          >
+            <Text style={authSharedStyles.primaryButtonText}>Se connecter</Text>
+          </Pressable>
 
-        <Pressable
-          onPress={() => navigation.navigate('RegisterAccountType')}
-          style={authSharedStyles.secondaryButton}
-        >
-          <Text style={authSharedStyles.secondaryButtonText}>S&apos;inscrire</Text>
-        </Pressable>
+          <Pressable
+            onPress={() => navigation.navigate('RegisterAccountType')}
+            style={authSharedStyles.secondaryButton}
+          >
+            <Text style={authSharedStyles.secondaryButtonText}>S&apos;inscrire</Text>
+          </Pressable>
+        </View>
       </View>
-    </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(179, 229, 255, 0.80)',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
     padding: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
   logo: {
-    width: 120,
-    height: 120,
+    width: 180,
+    height: 80,
     marginBottom: 24,
   },
   title: {
-    fontSize: 30,
+    fontSize: 40,
     fontWeight: '700',
-    color: '#0f172a',
+    textAlign: 'center',
+    color: '#fff',
   },
   subtitle: {
-    color: '#475569',
+    color: '#fff',
     textAlign: 'center',
+    fontSize: 16,
     marginTop: 8,
     marginBottom: 24,
     maxWidth: 320,
@@ -62,5 +75,8 @@ const styles = StyleSheet.create({
   ctaStack: {
     width: '100%',
     gap: 12,
+  },
+  loginButton: {
+    backgroundColor: '#2D3F8C',
   },
 });

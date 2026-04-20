@@ -188,9 +188,6 @@ export function AccountScreen({ navigation }: Props) {
     return (
       <View style={styles.loaderContainer}>
         <Text style={styles.profileText}>Le profil détaillé est disponible uniquement côté driver.</Text>
-        <Pressable style={styles.primaryButton} onPress={() => navigation.navigate('MyBookings')}>
-          <Text style={styles.primaryButtonText}>Mes réservations</Text>
-        </Pressable>
         <Pressable onPress={logout} style={styles.logoutButton}>
           <Text style={styles.logoutButtonText}>Logout</Text>
         </Pressable>
@@ -295,10 +292,6 @@ export function AccountScreen({ navigation }: Props) {
         )}
       </View>
 
-      <Pressable style={styles.primaryButton} onPress={() => navigation.navigate('MyBookings')}>
-        <Text style={styles.primaryButtonText}>Mes réservations</Text>
-      </Pressable>
-
       <View style={styles.vehiclesSection}>
         <Text style={styles.sectionTitle}>Mes véhicules</Text>
         {vehicles.length === 0 ? (
@@ -377,10 +370,6 @@ export function AccountScreen({ navigation }: Props) {
         </View>
       </View>
 
-      <Pressable style={styles.primaryButton} onPress={() => { console.log('[DEBUG] navigate MyBookings'); navigation.navigate('MyBookings'); }}>
-        <Text style={styles.primaryButtonText}>Mes réservations</Text>
-      </Pressable>
-
       <Pressable onPress={logout} style={styles.logoutButton}>
         <Text style={styles.logoutButtonText}>Logout</Text>
       </Pressable>
@@ -395,6 +384,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
+    paddingTop: 48,
     paddingBottom: 32,
     gap: 14,
   },

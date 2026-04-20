@@ -34,14 +34,14 @@ export function AuthNavigator() {
         <Stack.Screen
           name="OnboardingWelcome"
           component={OnboardingWelcomeScreen}
-          options={{ title: 'Bienvenue' }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="LoginRoleSelect"
           component={LoginRoleSelectScreen}
-          options={{ title: 'Connexion' }}
+          options={{ headerShown: false }}
         />
-        <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Connexion' }} />
+        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
         <Stack.Screen
           name="RegisterAccountType"
           component={RegisterAccountTypeScreen}

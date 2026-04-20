@@ -1,12 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-
 import { getMyBookings, MyBooking } from '../../services/api/bookingApi';
-import { AccountStackParamList } from '../../types/navigation';
-
-type Props = NativeStackScreenProps<AccountStackParamList, 'MyBookings'>;
 
 function formatDate(isoDate: string): string {
   const date = new Date(isoDate);
@@ -19,7 +14,7 @@ function formatDate(isoDate: string): string {
   });
 }
 
-export function MyBookingsScreen(_: Props) {
+export function MyBookingsScreen() {
   const [bookings, setBookings] = useState<MyBooking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -57,28 +52,20 @@ export function MyBookingsScreen(_: Props) {
     );
   }
 
-  if (errorMessage) {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.errorText}>{errorMessage}</Text>
-      </View>
-    );
-  }
-
-  if (bookings.length === 0) {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.emptyText}>Aucune réservation pour le moment.</Text>
-      </View>
-    );
-  }
-
   return (
     <FlatList
       style={styles.container}
       contentContainerStyle={styles.content}
       data={bookings}
       keyExtractor={(item) => String(item.id_booking)}
+      ListHeaderComponent={<Text style={styles.title}>Mes réservations</Text>}
+      ListEmptyComponent={
+        errorMessage ? (
+          <Text style={styles.errorText}>{errorMessage}</Text>
+        ) : (
+          <Text style={styles.emptyText}>Aucune réservation pour le moment.</Text>
+        )
+      }
       renderItem={({ item }) => (
         <View style={styles.card}>
           <View style={styles.cardHeader}>
@@ -111,14 +98,14 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
+    paddingTop: 48,
     paddingBottom: 32,
-    gap: 12,
+    gap: 14,
   },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8fafc',
+  title: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#0f172a',
   },
   errorText: {
     color: '#b91c1c',
