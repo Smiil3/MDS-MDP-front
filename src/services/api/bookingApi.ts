@@ -60,3 +60,23 @@ export async function createBooking(payload: CreateBookingPayload): Promise<Book
   );
   return response.booking;
 }
+
+export type MyBooking = {
+  id_booking: number;
+  appointment_date: string;
+  total_amount: string;
+  created_at: string;
+  booking_status: { id_booking_status: number; label: string };
+  mechanic: { id_mechanic: number; name: string; city: string; address: string };
+  vehicle: { id_vehicle: number; brand: string; model: string; license_plate: string; fuel_type: string };
+  booking_garage_service: { garage_service: { id_garage_service: number; category: string; label: string; price: string } }[];
+};
+
+type MyBookingsResponse = {
+  bookings: MyBooking[];
+};
+
+export async function getMyBookings(): Promise<MyBooking[]> {
+  const response = await apiGet<MyBookingsResponse>('/api/bookings/me');
+  return response.bookings ?? [];
+}

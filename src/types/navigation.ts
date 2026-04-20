@@ -36,9 +36,14 @@ export type HomeStackParamList = {
   };
 };
 
+export type AccountStackParamList = {
+  AccountMain: undefined;
+  MyBookings: undefined;
+};
+
 export type AppTabParamList = {
   Home: NavigatorScreenParams<HomeStackParamList> | undefined;
-  Account: undefined;
+  Account: NavigatorScreenParams<AccountStackParamList> | undefined;
 };
 
 export type RootStackParamList = {
