@@ -10,6 +10,8 @@ import {
   View,
 } from 'react-native';
 
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+
 import { useAuth } from '../../context/auth/AuthContext';
 import {
   createMyVehicle,
@@ -17,12 +19,15 @@ import {
   getMyVehicles,
   updateMyProfile,
 } from '../../services/api/profileApi';
+import { AccountStackParamList } from '../../types/navigation';
 import { DriverProfile, DriverVehicle } from '../../types/profile';
+
+type Props = NativeStackScreenProps<AccountStackParamList, 'AccountMain'>;
 
 const PROFILE_PLACEHOLDER =
   'https://images.unsplash.com/photo-1502685104226-ee32379fefbe?w=600&q=80';
 
-export function AccountScreen() {
+export function AccountScreen({ navigation }: Props) {
   const { user, logout } = useAuth();
   const [profile, setProfile] = useState<DriverProfile | null>(null);
   const [vehicles, setVehicles] = useState<DriverVehicle[]>([]);
@@ -183,6 +188,9 @@ export function AccountScreen() {
     return (
       <View style={styles.loaderContainer}>
         <Text style={styles.profileText}>Le profil détaillé est disponible uniquement côté driver.</Text>
+        <Pressable style={styles.primaryButton} onPress={() => navigation.navigate('MyBookings')}>
+          <Text style={styles.primaryButtonText}>Mes réservations</Text>
+        </Pressable>
         <Pressable onPress={logout} style={styles.logoutButton}>
           <Text style={styles.logoutButtonText}>Logout</Text>
         </Pressable>
@@ -287,6 +295,10 @@ export function AccountScreen() {
         )}
       </View>
 
+      <Pressable style={styles.primaryButton} onPress={() => navigation.navigate('MyBookings')}>
+        <Text style={styles.primaryButtonText}>Mes réservations</Text>
+      </Pressable>
+
       <View style={styles.vehiclesSection}>
         <Text style={styles.sectionTitle}>Mes véhicules</Text>
         {vehicles.length === 0 ? (
@@ -364,6 +376,10 @@ export function AccountScreen() {
           </Pressable>
         </View>
       </View>
+
+      <Pressable style={styles.primaryButton} onPress={() => { console.log('[DEBUG] navigate MyBookings'); navigation.navigate('MyBookings'); }}>
+        <Text style={styles.primaryButtonText}>Mes réservations</Text>
+      </Pressable>
 
       <Pressable onPress={logout} style={styles.logoutButton}>
         <Text style={styles.logoutButtonText}>Logout</Text>

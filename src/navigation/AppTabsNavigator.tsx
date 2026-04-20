@@ -1,6 +1,6 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
-import { AccountScreen } from '../screens/app/AccountScreen';
+import { AccountStackNavigator } from './AccountStackNavigator';
 import { HomeStackNavigator } from './HomeStackNavigator';
 import { AppTabParamList } from '../types/navigation';
 
@@ -14,7 +14,7 @@ export function AppTabsNavigator() {
         component={HomeStackNavigator}
         options={{ title: 'Accueil', headerShown: false }}
       />
-      <Tab.Screen name="Account" component={AccountScreen} options={{ title: 'Compte' }} />
+      <Tab.Screen name="Account" component={AccountStackNavigator} options={{ title: 'Compte', headerShown: false }} />
     </Tab.Navigator>
   );
 }
