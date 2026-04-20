@@ -1,5 +1,5 @@
 import { apiGet } from './httpClient';
-import { GarageCard, GarageDetailsResponse, NearbyGaragesResponse } from '../../types/garage';
+import { GarageCard, GarageDetailsResponse, GarageReviewsResponse, NearbyGaragesResponse } from '../../types/garage';
 
 type GetNearbyGaragesParams = {
   lat?: number;
@@ -34,4 +34,8 @@ export async function getNearbyGarages(
 export async function getGarageDetails(garageId: number): Promise<GarageCard> {
   const response = await apiGet<GarageDetailsResponse>(`/api/garages/${garageId}`);
   return 'garage' in response ? response.garage : response;
+}
+
+export async function getGarageReviews(garageId: number, page: number): Promise<GarageReviewsResponse> {
+  return apiGet<GarageReviewsResponse>(`/api/mechanics/${garageId}/reviews?page=${page}&limit=5`);
 }
