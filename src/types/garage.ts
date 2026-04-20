@@ -46,3 +46,22 @@ export type GarageDetailsResponse =
   | {
       garage: GarageCard;
     };
+
+export type GarageReview = {
+  id_review: number;
+  rating: number;
+  description: string;
+  date: string;
+  driver: {
+    first_name: string;
+    last_name: string;
+  };
+};
+
+export type GarageReviewsResponse = {
+  reviews: GarageReview[];
+  total: number;
+  average: number;
+  page: number;
+  totalPages: number;
+};
