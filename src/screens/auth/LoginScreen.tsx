@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useAuth } from '../../context/auth/AuthContext';
 import { AuthRole } from '../../types/auth';
@@ -56,8 +56,9 @@ export function LoginScreen({ navigation, route }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome back</Text>
-      <Text style={styles.subtitle}>Connexion en tant que {roleLabels[role]}.</Text>
+      <Image source={require('../../../assets/images/logo-mecanoo.png')} style={styles.logo} resizeMode="contain" />
+      <Text style={styles.title}>Welcome back !</Text>
+      <Text style={styles.subtitle}>Tu te connectes en tant que {roleLabels[role]}.</Text>
 
       <TextInput
         value={email}
@@ -82,7 +83,7 @@ export function LoginScreen({ navigation, route }: Props) {
       </Pressable>
 
       <Pressable onPress={() => navigation.navigate('RegisterAccountType')}>
-        <Text style={styles.link}>No account? Create one</Text>
+        <Text style={styles.link}>Pas de compte ? Inscris-toi !</Text>
       </Pressable>
     </View>
   );
@@ -91,31 +92,40 @@ export function LoginScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#B3E5FF',
     padding: 20,
     justifyContent: 'center',
+    alignItems: 'center',
     gap: 12,
   },
+  logo: {
+    width: 180,
+    height: 80,
+    marginBottom: 8,
+  },
   title: {
-    fontSize: 28,
+    fontSize: 40,
     fontWeight: '700',
-    color: '#0f172a',
+    textAlign: 'center',
+    color: '#fff',
   },
   subtitle: {
-    color: '#334155',
+    color: '#fff',
+    fontSize: 16,
+    textAlign: 'center',
     marginBottom: 8,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
+    width: '100%',
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     backgroundColor: '#fff',
   },
   submitButton: {
+    width: '100%',
     marginTop: 4,
-    backgroundColor: '#2563eb',
+    backgroundColor: '#2D3F8C',
     paddingVertical: 12,
     borderRadius: 10,
     alignItems: 'center',
@@ -125,12 +135,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   errorText: {
-    color: '#dc2626',
+    color: '#7f1d1d',
+    fontWeight: '600',
   },
   link: {
     marginTop: 4,
     textAlign: 'center',
-    color: '#1d4ed8',
+    color: '#fff',
     fontWeight: '600',
   },
 });

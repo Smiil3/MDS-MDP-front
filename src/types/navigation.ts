@@ -38,11 +38,11 @@ export type HomeStackParamList = {
 
 export type AccountStackParamList = {
   AccountMain: undefined;
-  MyBookings: undefined;
 };
 
 export type AppTabParamList = {
   Home: NavigatorScreenParams<HomeStackParamList> | undefined;
+  Bookings: undefined;
   Account: NavigatorScreenParams<AccountStackParamList> | undefined;
 };
 
