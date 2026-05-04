@@ -5,8 +5,6 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
-  Linking,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -20,21 +18,11 @@ import {
   getNearbyGarages,
   MAP_VIEW_LIMIT,
 } from '../../services/api/garageApi';
-import { GarageCard, OpeningHours } from '../../types/garage';
+import { GarageCard } from '../../types/garage';
 import { HomeStackParamList } from '../../types/navigation';
 
 const PLACEHOLDER_IMAGE =
   'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=1200&q=80';
-
-const DAY_LABELS: Record<string, string> = {
-  mon: 'Lun',
-  tue: 'Mar',
-  wed: 'Mer',
-  thu: 'Jeu',
-  fri: 'Ven',
-  sat: 'Sam',
-  sun: 'Dim',
-};
 
 type ViewMode = 'cards' | 'map';
 type Props = NativeStackScreenProps<HomeStackParamList, 'HomeList'>;
@@ -51,46 +39,20 @@ const formatDistance = (distanceMeters: number | null) => {
   return `${(distanceMeters / 1000).toFixed(1)} km`;
 };
 
-const isClosedDay = (
-  value: OpeningHours[string],
-): value is {
-  closed: true;
-} => typeof value === 'object' && !Array.isArray(value) && value !== null && 'closed' in value;
-
-const formatOpeningHours = (openingHours: OpeningHours | null): string => {
-  if (!openingHours) {
-    return 'Horaires non renseignés';
-  }
-
-  const firstEntry = Object.entries(openingHours).find(([, value]) => {
-    if (Array.isArray(value)) {
-      return value.length > 0 && Boolean(value[0]?.open && value[0]?.close);
-    }
-    return isClosedDay(value) ? false : Boolean(value.open && value.close);
-  });
-
-  if (!firstEntry) {
-    return 'Horaires non renseignés';
-  }
-
-  const [dayKey, value] = firstEntry;
-  if (Array.isArray(value)) {
-    const firstSlot = value[0];
-    if (!firstSlot) {
-      return 'Horaires non renseignés';
-    }
-    return `${DAY_LABELS[dayKey] ?? dayKey}: ${firstSlot.open}-${firstSlot.close}`;
-  }
-
-  if (isClosedDay(value)) {
-    return `${DAY_LABELS[dayKey] ?? dayKey}: fermé`;
-  }
-
-  return `${DAY_LABELS[dayKey] ?? dayKey}: ${value.open}-${value.close}`;
-};
-
 const hasGarageCoordinates = (garage: GarageCard) =>
   typeof garage.latitude === 'number' && typeof garage.longitude === 'number';
+
+const getCategoryNames = (services: GarageCard['services'], max = 3): string[] => {
+  if (!services) return [];
+  const names: string[] = [];
+  for (const category of services) {
+    for (const key of Object.keys(category)) {
+      names.push(key);
+      if (names.length >= max) return names;
+    }
+  }
+  return names;
+};
 
 export function HomeScreen({ navigation }: Props) {
   const [garages, setGarages] = useState<GarageCard[]>([]);
@@ -228,45 +190,13 @@ export function HomeScreen({ navigation }: Props) {
     [garages],
   );
 
-  const openGarageNavigation = async (garage: GarageCard) => {
-    if (!hasGarageCoordinates(garage)) {
-      setErrorMessage('Navigation indisponible: coordonnées du garage manquantes.');
-      return;
-    }
-
-    setErrorMessage(null);
-
-    const destination = `${garage.latitude},${garage.longitude}`;
-    const encodedName = encodeURIComponent(garage.name);
-    const defaultSystemUrl =
-      Platform.OS === 'ios'
-        ? `http://maps.apple.com/?daddr=${destination}&q=${encodedName}`
-        : `geo:0,0?q=${destination}(${encodedName})`;
-    const fallbackUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
-
-    try {
-      if (await Linking.canOpenURL(defaultSystemUrl)) {
-        await Linking.openURL(defaultSystemUrl);
-        return;
-      }
-      if (await Linking.canOpenURL(fallbackUrl)) {
-        await Linking.openURL(fallbackUrl);
-        return;
-      }
-
-      setErrorMessage("Impossible d'ouvrir la navigation pour ce garage.");
-    } catch {
-      setErrorMessage("Impossible d'ouvrir la navigation pour ce garage.");
-    }
-  };
-
   const openGarageDetails = (garage: GarageCard) => {
     navigation.navigate('GarageDetails', { garageId: garage.id });
   };
 
   const renderGarageCard = (item: GarageCard, withDetailsNavigation = false) => {
     const distanceLabel = formatDistance(item.distanceMeters);
-    const canNavigate = hasGarageCoordinates(item);
+    const categoryNames = getCategoryNames(item.services);
     return (
       <Pressable
         disabled={!withDetailsNavigation}
@@ -275,25 +205,23 @@ export function HomeScreen({ navigation }: Props) {
       >
         <Image source={{ uri: item.imageUrl ?? PLACEHOLDER_IMAGE }} style={styles.cardImage} />
         <View style={styles.cardBody}>
-          <Text style={styles.cardTitle}>{item.name}</Text>
-          <Text style={styles.cardCity}>{item.city}</Text>
+          <View style={styles.cardTitleRow}>
+            <Text style={styles.cardTitle}>{item.name}</Text>
+            {item.averageRating != null ? (
+              <Text style={styles.cardRating}>⭐ {item.averageRating.toFixed(1)}</Text>
+            ) : null}
+          </View>
+          <Text style={styles.cardAddress}>{item.address}</Text>
           {distanceLabel ? <Text style={styles.cardDistance}>À {distanceLabel}</Text> : null}
-          <Text style={styles.cardHours}>{formatOpeningHours(item.openingHours)}</Text>
-          <Text numberOfLines={2} style={styles.cardDescription}>
-            {item.description?.trim() || 'Description à venir.'}
-          </Text>
-          <Pressable
-            disabled={!canNavigate}
-            onPress={(event) => {
-              event.stopPropagation();
-              void openGarageNavigation(item);
-            }}
-            style={[styles.navigateButton, !canNavigate ? styles.navigateButtonDisabled : null]}
-          >
-            <Text style={[styles.navigateButtonText, !canNavigate ? styles.navigateButtonTextDisabled : null]}>
-              Naviguer
-            </Text>
-          </Pressable>
+          {categoryNames.length > 0 ? (
+            <View style={styles.cardServices}>
+              {categoryNames.map((name) => (
+                <View key={name} style={styles.serviceTag}>
+                  <Text style={styles.serviceTagText}>{name}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
         </View>
       </Pressable>
     );
@@ -453,7 +381,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   card: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     backgroundColor: '#fff',
     borderRadius: 14,
     overflow: 'hidden',
@@ -464,54 +392,54 @@ const styles = StyleSheet.create({
     opacity: 0.92,
   },
   cardImage: {
-    width: 110,
-    height: 110,
+    width: '100%',
+    height: 160,
   },
   cardBody: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    gap: 3,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    gap: 4,
+  },
+  cardTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   cardTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#0f172a',
+    flex: 1,
   },
-  cardCity: {
+  cardRating: {
     fontSize: 13,
-    color: '#334155',
+    fontWeight: '600',
+    color: '#0f172a',
+    marginLeft: 8,
+  },
+  cardAddress: {
+    fontSize: 13,
+    color: '#94a3b8',
   },
   cardDistance: {
     fontSize: 13,
     fontWeight: '600',
     color: '#1d4ed8',
   },
-  cardHours: {
-    fontSize: 13,
-    color: '#0f766e',
+  cardServices: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 4,
   },
-  cardDescription: {
-    fontSize: 12,
-    color: '#475569',
-  },
-  navigateButton: {
-    marginTop: 8,
-    alignSelf: 'flex-start',
-    backgroundColor: '#1d4ed8',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+  serviceTag: {
+    backgroundColor: '#f1f5f9',
     borderRadius: 999,
+    paddingVertical: 3,
+    paddingHorizontal: 10,
   },
-  navigateButtonDisabled: {
-    backgroundColor: '#cbd5e1',
-  },
-  navigateButtonText: {
-    color: '#f8fafc',
+  serviceTagText: {
     fontSize: 12,
-    fontWeight: '700',
-  },
-  navigateButtonTextDisabled: {
     color: '#475569',
   },
   mapContainer: {
