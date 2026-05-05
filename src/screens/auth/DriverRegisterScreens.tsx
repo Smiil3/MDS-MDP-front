@@ -275,7 +275,7 @@ export function RegisterDriverBirthDateScreen({ navigation }: BirthProps) {
         />
       ) : (
         <>
-          <Text style={{ color: '#334155', fontWeight: '600' }}>Date de naissance</Text>
+          <Text style={{ color: '#fff', fontWeight: '600' }}>Date de naissance</Text>
           <Pressable
             onPress={() => setPickerOpen((value) => !value)}
             style={authSharedStyles.secondaryButton}
@@ -354,11 +354,11 @@ export function RegisterDriverReviewScreen({ navigation }: ReviewProps) {
       canGoBack
       onGoBack={() => navigation.goBack()}
     >
-      <Text>Email: {driver.email}</Text>
-      <Text>Prénom: {driver.firstName}</Text>
-      <Text>Nom: {driver.lastName}</Text>
-      <Text>Téléphone: {driver.phone}</Text>
-      <Text>Date de naissance: {driver.birthDate}</Text>
+      <Text style={{ color: '#fff' }}>Email: {driver.email}</Text>
+      <Text style={{ color: '#fff' }}>Prénom: {driver.firstName}</Text>
+      <Text style={{ color: '#fff' }}>Nom: {driver.lastName}</Text>
+      <Text style={{ color: '#fff' }}>Téléphone: {driver.phone}</Text>
+      <Text style={{ color: '#fff' }}>Date de naissance: {driver.birthDate}</Text>
       {error ? <Text style={authSharedStyles.errorText}>{error}</Text> : null}
       <Pressable onPress={onSubmit} disabled={isSubmitting} style={authSharedStyles.primaryButton}>
         <Text style={authSharedStyles.primaryButtonText}>

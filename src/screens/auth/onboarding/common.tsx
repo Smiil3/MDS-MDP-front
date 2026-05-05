@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ComponentProps, PropsWithChildren } from 'react';
 
 type WizardProps = PropsWithChildren<{
@@ -30,9 +30,12 @@ export function WizardScreenLayout({
         {stepLabel ? <Text style={styles.stepText}>{stepLabel}</Text> : null}
       </View>
 
-      <Text style={styles.title}>{title}</Text>
-      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-      <View style={styles.content}>{children}</View>
+      <View style={styles.centered}>
+        <Image source={require('../../../../assets/images/logo-mecanoo.png')} style={styles.logo} resizeMode="contain" />
+        <Text style={styles.title}>{title}</Text>
+        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+        <View style={styles.content}>{children}</View>
+      </View>
     </View>
   );
 }
@@ -52,7 +55,7 @@ export function LabeledInput({ label, style, ...props }: LabeledInputProps) {
 
 export const authSharedStyles = StyleSheet.create({
   primaryButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#2D3F8C',
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: 'center',
@@ -76,7 +79,8 @@ export const authSharedStyles = StyleSheet.create({
     fontWeight: '600',
   },
   errorText: {
-    color: '#dc2626',
+    color: '#7f1d1d',
+    fontWeight: '600',
   },
 });
 
@@ -84,7 +88,7 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#B3E5FF',
   },
   header: {
     flexDirection: 'row',
@@ -93,7 +97,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   stepText: {
-    color: '#64748b',
+    color: '#fff',
     fontWeight: '600',
   },
   backButton: {
@@ -101,35 +105,47 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   backButtonText: {
-    color: '#1d4ed8',
+    color: '#fff',
     fontWeight: '600',
   },
   backButtonPlaceholder: {
     width: 54,
   },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  logo: {
+    width: 180,
+    height: 80,
+    marginBottom: 8,
+  },
   title: {
-    fontSize: 28,
+    fontSize: 40,
     fontWeight: '700',
-    color: '#0f172a',
+    color: '#fff',
+    textAlign: 'center',
   },
   subtitle: {
-    color: '#334155',
-    marginTop: 4,
-    marginBottom: 16,
+    color: '#fff',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 8,
   },
   content: {
+    width: '100%',
     gap: 12,
   },
   field: {
     gap: 6,
   },
   label: {
-    color: '#334155',
+    color: '#fff',
     fontWeight: '600',
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,

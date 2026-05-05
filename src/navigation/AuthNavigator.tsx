@@ -45,20 +45,20 @@ export function AuthNavigator() {
         <Stack.Screen
           name="RegisterAccountType"
           component={RegisterAccountTypeScreen}
-          options={{ title: 'Inscription' }}
+          options={{ headerShown: false }}
         />
-        <Stack.Screen name="RegisterDriverEmail" component={RegisterDriverEmailScreen} options={{ title: 'Inscription particulier' }} />
-        <Stack.Screen name="RegisterDriverPassword" component={RegisterDriverPasswordScreen} options={{ title: 'Inscription particulier' }} />
-        <Stack.Screen name="RegisterDriverIdentity" component={RegisterDriverIdentityScreen} options={{ title: 'Inscription particulier' }} />
-        <Stack.Screen name="RegisterDriverPhone" component={RegisterDriverPhoneScreen} options={{ title: 'Inscription particulier' }} />
-        <Stack.Screen name="RegisterDriverBirthDate" component={RegisterDriverBirthDateScreen} options={{ title: 'Inscription particulier' }} />
-        <Stack.Screen name="RegisterDriverReview" component={RegisterDriverReviewScreen} options={{ title: 'Inscription particulier' }} />
-        <Stack.Screen name="RegisterGarageInfo" component={RegisterGarageInfoScreen} options={{ title: 'Inscription garage' }} />
-        <Stack.Screen name="RegisterGarageAddress" component={RegisterGarageAddressScreen} options={{ title: 'Inscription garage' }} />
-        <Stack.Screen name="RegisterGarageServices" component={RegisterGarageServicesScreen} options={{ title: 'Inscription garage' }} />
-        <Stack.Screen name="RegisterGarageHours" component={RegisterGarageHoursScreen} options={{ title: 'Inscription garage' }} />
-        <Stack.Screen name="RegisterGarageCredentials" component={RegisterGarageCredentialsScreen} options={{ title: 'Inscription garage' }} />
-        <Stack.Screen name="RegisterGarageReview" component={RegisterGarageReviewScreen} options={{ title: 'Inscription garage' }} />
+        <Stack.Screen name="RegisterDriverEmail" component={RegisterDriverEmailScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="RegisterDriverPassword" component={RegisterDriverPasswordScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="RegisterDriverIdentity" component={RegisterDriverIdentityScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="RegisterDriverPhone" component={RegisterDriverPhoneScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="RegisterDriverBirthDate" component={RegisterDriverBirthDateScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="RegisterDriverReview" component={RegisterDriverReviewScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="RegisterGarageInfo" component={RegisterGarageInfoScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="RegisterGarageAddress" component={RegisterGarageAddressScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="RegisterGarageServices" component={RegisterGarageServicesScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="RegisterGarageHours" component={RegisterGarageHoursScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="RegisterGarageCredentials" component={RegisterGarageCredentialsScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="RegisterGarageReview" component={RegisterGarageReviewScreen} options={{ headerShown: false }} />
       </Stack.Navigator>
     </AuthOnboardingProvider>
   );

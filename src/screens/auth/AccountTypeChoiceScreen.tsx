@@ -4,7 +4,6 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuthOnboarding } from '../../context/auth/AuthOnboardingContext';
 import { AuthRole } from '../../types/auth';
 import { AuthStackParamList } from '../../types/navigation';
-import { authSharedStyles, WizardScreenLayout } from './onboarding/common';
 
 type LoginProps = NativeStackScreenProps<AuthStackParamList, 'LoginRoleSelect'>;
 
@@ -108,14 +107,6 @@ const loginStyles = StyleSheet.create({
   },
 });
 
-function RoleChoice({ onPress, label }: { onPress: () => void; label: string }) {
-  return (
-    <Pressable onPress={onPress} style={authSharedStyles.secondaryButton}>
-      <Text style={authSharedStyles.secondaryButtonText}>{label}</Text>
-    </Pressable>
-  );
-}
-
 type RegisterProps = NativeStackScreenProps<AuthStackParamList, 'RegisterAccountType'>;
 
 export function RegisterAccountTypeScreen({ navigation }: RegisterProps) {
@@ -134,14 +125,28 @@ export function RegisterAccountTypeScreen({ navigation }: RegisterProps) {
   };
 
   return (
-    <WizardScreenLayout
-      title="Création de compte"
-      subtitle="Tu t&apos;inscris en tant que particulier ou garage ?"
-      canGoBack
-      onGoBack={() => navigation.goBack()}
-    >
-      <RoleChoice onPress={onSelectDriver} label="Particulier" />
-      <RoleChoice onPress={onSelectGarage} label="Garage" />
-    </WizardScreenLayout>
+    <View style={loginStyles.container}>
+      <Image source={require('../../../assets/images/logo-mecanoo.png')} style={loginStyles.logo} resizeMode="contain" />
+      <Text style={loginStyles.title}>Inscription</Text>
+      <Text style={loginStyles.subtitle}>Tu t'inscris en tant que particulier ou garage ?</Text>
+      <View style={loginStyles.ctaRow}>
+        <Pressable onPress={onSelectDriver} style={loginStyles.roleCard}>
+          <Image source={require('../../../assets/images/driver.jpg')} style={loginStyles.roleImage} resizeMode="cover" />
+          <View style={loginStyles.roleDimmer} />
+          <View style={loginStyles.roleContent}>
+            <Image source={require('../../../assets/images/user.png')} style={loginStyles.roleLogo} resizeMode="contain" />
+            <Text style={loginStyles.roleLabel}>Particulier</Text>
+          </View>
+        </Pressable>
+        <Pressable onPress={onSelectGarage} style={loginStyles.roleCard}>
+          <Image source={require('../../../assets/images/mechanic.jpg')} style={loginStyles.roleImage} resizeMode="cover" />
+          <View style={loginStyles.roleDimmer} />
+          <View style={loginStyles.roleContent}>
+            <Image source={require('../../../assets/images/screwdriver.png')} style={loginStyles.roleLogo} resizeMode="contain" />
+            <Text style={loginStyles.roleLabel}>Garagiste</Text>
+          </View>
+        </Pressable>
+      </View>
+    </View>
   );
 }
