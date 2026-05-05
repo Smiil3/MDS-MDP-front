@@ -24,6 +24,10 @@ import { HomeStackParamList } from '../../types/navigation';
 const PLACEHOLDER_IMAGE =
   'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=1200&q=80';
 
+
+const ADDRESS_ICON = require('../../../assets/images/address.png');
+const DISTANCE_ICON = require('../../../assets/images/navigation.png');
+
 type ViewMode = 'cards' | 'map';
 type Props = NativeStackScreenProps<HomeStackParamList, 'HomeList'>;
 
@@ -211,8 +215,16 @@ export function HomeScreen({ navigation }: Props) {
               <Text style={styles.cardRating}>⭐ {item.averageRating.toFixed(1)}</Text>
             ) : null}
           </View>
-          <Text style={styles.cardAddress}>{item.address}</Text>
-          {distanceLabel ? <Text style={styles.cardDistance}>À {distanceLabel}</Text> : null}
+          <View style={styles.cardInfoRow}>
+            {ADDRESS_ICON ? <Image source={ADDRESS_ICON} style={styles.cardRowIcon} /> : null}
+            <Text style={styles.cardAddress}>{item.address}</Text>
+          </View>
+          {distanceLabel ? (
+            <View style={styles.cardInfoRow}>
+              {DISTANCE_ICON ? <Image source={DISTANCE_ICON} style={styles.cardRowIcon} /> : null}
+              <Text style={styles.cardDistance}>À {distanceLabel} de vous</Text>
+            </View>
+          ) : null}
           {categoryNames.length > 0 ? (
             <View style={styles.cardServices}>
               {categoryNames.map((name) => (
@@ -229,13 +241,16 @@ export function HomeScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Garages autour de moi</Text>
-      <TextInput
-        value={search}
-        onChangeText={setSearch}
-        placeholder="Rechercher par nom ou ville"
-        style={styles.searchInput}
-      />
+      <View style={styles.header}>
+        <Image source={require('../../../assets/images/logo-mecanoo.png')} style={styles.headerLogo} />
+        <Text style={styles.title}>Les garages proches de vous</Text>
+        <TextInput
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Rechercher par nom ou ville"
+          style={styles.searchInput}
+        />
+      </View>
 
       {locationDenied ? (
         <Text style={styles.infoText}>
@@ -328,24 +343,40 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f1f5f9',
+  },
+  header: {
+    backgroundColor: '#dbeafe',
     paddingTop: 48,
     paddingHorizontal: 16,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    alignItems: 'center',
+  },
+  headerLogo: {
+    width: 55,
+    height: 28,
+    resizeMode: 'contain',
   },
   content: {
     flex: 1,
     paddingTop: 12,
+    paddingHorizontal: 16,
   },
   title: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#0f172a',
+    color: '#1a3fa6',
+    marginTop: 10,
     marginBottom: 12,
+    alignSelf: 'stretch',
   },
   searchInput: {
+    alignSelf: 'stretch',
     backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#cbd5e1',
+    borderColor: '#bfdbfe',
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
@@ -353,11 +384,13 @@ const styles = StyleSheet.create({
   },
   infoText: {
     marginTop: 10,
+    marginHorizontal: 16,
     fontSize: 13,
     color: '#475569',
   },
   errorText: {
     marginTop: 10,
+    marginHorizontal: 16,
     fontSize: 13,
     color: '#b91c1c',
   },
@@ -406,16 +439,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '700',
     color: '#0f172a',
     flex: 1,
   },
   cardRating: {
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: '600',
     color: '#0f172a',
     marginLeft: 8,
+  },
+  cardInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  cardRowIcon: {
+    width: 13,
+    height: 13,
   },
   cardAddress: {
     fontSize: 13,
@@ -424,7 +466,7 @@ const styles = StyleSheet.create({
   cardDistance: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#1d4ed8',
+    color: '#1a3fa6',
   },
   cardServices: {
     flexDirection: 'row',
@@ -487,7 +529,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   modeButtonActive: {
-    backgroundColor: '#1d4ed8',
+    backgroundColor: '#1a3fa6',
   },
   modeButtonDisabled: {
     opacity: 0.45,
