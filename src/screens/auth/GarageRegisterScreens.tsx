@@ -159,7 +159,7 @@ export function RegisterGarageInfoScreen({ navigation }: InfoProps) {
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#f8fafc' }} contentContainerStyle={{ paddingBottom: 24 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: '#B3E5FF' }} contentContainerStyle={{ paddingBottom: 24 }}>
       <WizardScreenLayout
         title="Infos garage"
         subtitle="Étape 1/6"
@@ -187,7 +187,7 @@ export function RegisterGarageInfoScreen({ navigation }: InfoProps) {
             {isCheckingSiret ? 'Vérification...' : 'Vérifier le SIRET'}
           </Text>
         </Pressable>
-        {siretSource ? <Text>Infos récupérées via {siretSource}</Text> : null}
+        {siretSource ? <Text style={{ color: '#fff' }}>Infos récupérées via {siretSource}</Text> : null}
         <LabeledInput
           label="Nom du garage"
           value={garage.name}
@@ -268,7 +268,7 @@ export function RegisterGarageAddressScreen({ navigation }: AddressProps) {
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#f8fafc' }} contentContainerStyle={{ paddingBottom: 24 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: '#B3E5FF' }} contentContainerStyle={{ paddingBottom: 24 }}>
       <WizardScreenLayout
         title="Adresse garage"
         subtitle="Étape 2/6"
@@ -310,7 +310,7 @@ export function RegisterGarageAddressScreen({ navigation }: AddressProps) {
           onChangeText={(value) => setGarage({ zipCode: value.replace(/\D/g, '').slice(0, 5) })}
           keyboardType="number-pad"
         />
-        <Text style={{ color: '#334155', fontWeight: '600' }}>Ville</Text>
+        <Text style={{ color: '#fff', fontWeight: '600' }}>Ville</Text>
         {cities.length > 0 ? (
           <View style={styles.listCard}>
             {cities.map((city) => (
@@ -437,7 +437,7 @@ export function RegisterGarageServicesScreen({ navigation }: ServicesProps) {
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#f8fafc' }} contentContainerStyle={{ paddingBottom: 24 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: '#B3E5FF' }} contentContainerStyle={{ paddingBottom: 24 }}>
       <WizardScreenLayout
         title="Services"
         subtitle="Étape 3/6"
@@ -576,7 +576,7 @@ export function RegisterGarageHoursScreen({ navigation }: HoursProps) {
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#f8fafc' }} contentContainerStyle={{ paddingBottom: 24 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: '#B3E5FF' }} contentContainerStyle={{ paddingBottom: 24 }}>
       <WizardScreenLayout
         title="Horaires"
         subtitle="Étape 4/6"
@@ -751,9 +751,9 @@ export function RegisterGarageReviewScreen({ navigation }: ReviewProps) {
       canGoBack
       onGoBack={() => navigation.goBack()}
     >
-      <Text>Garage: {garage.name}</Text>
-      <Text>Adresse: {garage.address}</Text>
-      <Text>
+      <Text style={{ color: '#fff' }}>Garage: {garage.name}</Text>
+      <Text style={{ color: '#fff' }}>Adresse: {garage.address}</Text>
+      <Text style={{ color: '#fff' }}>
         Ville: {garage.zipCode} {garage.city}
       </Text>
       <Text style={styles.sectionTitle}>Services</Text>
@@ -762,7 +762,7 @@ export function RegisterGarageReviewScreen({ navigation }: ReviewProps) {
           <View key={category} style={styles.reviewBlock}>
             <Text style={styles.reviewBlockTitle}>{category}</Text>
             {services.map((service, index) => (
-              <Text key={`${category}-${service.serviceName}-${index}`}>
+              <Text key={`${category}-${service.serviceName}-${index}`} style={{ color: '#fff' }}>
                 - {service.serviceName} ({service.price} EUR)
               </Text>
             ))}
@@ -777,12 +777,12 @@ export function RegisterGarageReviewScreen({ navigation }: ReviewProps) {
             ? 'Fermé'
             : slots.map((slot) => `${slot.open}-${slot.close}`).join(', ');
         return (
-          <Text key={`review-${day}`}>
+          <Text key={`review-${day}`} style={{ color: '#fff' }}>
             {dayLabels[day]}: {label}
           </Text>
         );
       })}
-      <Text>Email: {garage.email}</Text>
+      <Text style={{ color: '#fff' }}>Email: {garage.email}</Text>
       {error ? <Text style={authSharedStyles.errorText}>{error}</Text> : null}
       <Pressable onPress={onSubmit} disabled={isSubmitting} style={authSharedStyles.primaryButton}>
         <Text style={authSharedStyles.primaryButtonText}>
@@ -861,7 +861,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e2e8f0',
     borderRadius: 8,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#B3E5FF',
     padding: 10,
     gap: 6,
   },
@@ -873,7 +873,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e2e8f0',
     borderRadius: 8,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#B3E5FF',
     padding: 10,
     gap: 6,
   },
@@ -887,7 +887,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   sectionTitle: {
-    color: '#0f172a',
+    color: '#fff',
     fontWeight: '700',
     marginTop: 8,
   },
@@ -895,7 +895,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   reviewBlockTitle: {
-    color: '#334155',
+    color: '#fff',
     fontWeight: '700',
   },
 });
