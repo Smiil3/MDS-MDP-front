@@ -108,6 +108,14 @@ const loginStyles = StyleSheet.create({
   },
 });
 
+function RoleChoice({ onPress, label }: { onPress: () => void; label: string }) {
+  return (
+    <Pressable onPress={onPress} style={authSharedStyles.secondaryButton}>
+      <Text style={authSharedStyles.secondaryButtonText}>{label}</Text>
+    </Pressable>
+  );
+}
+
 type RegisterProps = NativeStackScreenProps<AuthStackParamList, 'RegisterAccountType'>;
 
 export function RegisterAccountTypeScreen({ navigation }: RegisterProps) {
