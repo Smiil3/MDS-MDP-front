@@ -25,7 +25,7 @@ const dayLabels: Record<(typeof dayKeys)[number], string> = {
   sun: 'Dimanche',
 };
 
-const hhmmPattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
+const hhmmPattern = /^([01]\d|2[0-3]):(00|30)$/;
 const createDraftId = (): string =>
   `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -99,7 +99,7 @@ function useGarageValidation() {
         });
         return hasInvalidRange || hasSlotsOverlap(slots);
       })
-        ? 'Les horaires doivent être au format HH:MM, sans chevauchement, et avec ouverture avant fermeture.'
+        ? 'Les horaires doivent être au format HH:00 ou HH:30, sans chevauchement, et avec ouverture avant fermeture.'
         : null,
       credentialsError:
         !garage.email.trim()
@@ -437,77 +437,79 @@ export function RegisterGarageServicesScreen({ navigation }: ServicesProps) {
   };
 
   return (
-    <WizardScreenLayout
-      title="Services"
-      subtitle="Étape 3/6"
-      stepLabel="Garage"
-      canGoBack
-      onGoBack={() => navigation.goBack()}
-    >
-      {garage.services.map((category, categoryIndex) => (
-        <View key={category.id} style={styles.serviceCard}>
-          <View style={styles.serviceHeader}>
-            <Text style={styles.serviceTitle}>Catégorie {categoryIndex + 1}</Text>
-            {garage.services.length > 1 ? (
-              <Pressable onPress={() => onRemoveCategory(category.id)} style={styles.linkButton}>
-                <Text style={styles.linkButtonText}>Supprimer</Text>
-              </Pressable>
-            ) : null}
-          </View>
-          <LabeledInput
-            label="Catégorie"
-            value={category.category}
-            onChangeText={(value) => {
-              setError(null);
-              onUpdateCategory(category.id, value);
-            }}
-            placeholder="Ex: Vidange"
-          />
-          {category.prestations.map((prestation, prestationIndex) => (
-            <View key={prestation.id} style={styles.prestationCard}>
-              <View style={styles.slotHeader}>
-                <Text style={styles.slotTitle}>Prestation {prestationIndex + 1}</Text>
-                <Pressable
-                  onPress={() => onRemovePrestation(category.id, prestation.id)}
-                  style={styles.linkButton}
-                >
+    <ScrollView style={{ flex: 1, backgroundColor: '#f8fafc' }} contentContainerStyle={{ paddingBottom: 24 }}>
+      <WizardScreenLayout
+        title="Services"
+        subtitle="Étape 3/6"
+        stepLabel="Garage"
+        canGoBack
+        onGoBack={() => navigation.goBack()}
+      >
+        {garage.services.map((category, categoryIndex) => (
+          <View key={category.id} style={styles.serviceCard}>
+            <View style={styles.serviceHeader}>
+              <Text style={styles.serviceTitle}>Catégorie {categoryIndex + 1}</Text>
+              {garage.services.length > 1 ? (
+                <Pressable onPress={() => onRemoveCategory(category.id)} style={styles.linkButton}>
                   <Text style={styles.linkButtonText}>Supprimer</Text>
                 </Pressable>
-              </View>
-              <LabeledInput
-                label="Prestation"
-                value={prestation.serviceName}
-                onChangeText={(value) => {
-                  setError(null);
-                  onUpdatePrestation(category.id, prestation.id, 'serviceName', value);
-                }}
-                placeholder="Ex: Forfait vidange"
-              />
-              <LabeledInput
-                label="Prix"
-                value={prestation.price}
-                onChangeText={(value) => {
-                  setError(null);
-                  onUpdatePrestation(category.id, prestation.id, 'price', value);
-                }}
-                keyboardType="decimal-pad"
-                placeholder="49.90"
-              />
+              ) : null}
             </View>
-          ))}
-          <Pressable onPress={() => onAddPrestation(category.id)} style={styles.inlineSecondaryButton}>
-            <Text style={styles.linkButtonText}>Ajouter une prestation</Text>
-          </Pressable>
-        </View>
-      ))}
-      <Pressable onPress={onAddCategory} style={authSharedStyles.secondaryButton}>
-        <Text style={authSharedStyles.secondaryButtonText}>Ajouter une catégorie</Text>
-      </Pressable>
-      {error ? <Text style={authSharedStyles.errorText}>{error}</Text> : null}
-      <Pressable onPress={onNext} style={authSharedStyles.primaryButton}>
-        <Text style={authSharedStyles.primaryButtonText}>Continuer</Text>
-      </Pressable>
-    </WizardScreenLayout>
+            <LabeledInput
+              label="Catégorie"
+              value={category.category}
+              onChangeText={(value) => {
+                setError(null);
+                onUpdateCategory(category.id, value);
+              }}
+              placeholder="Ex: Vidange"
+            />
+            {category.prestations.map((prestation, prestationIndex) => (
+              <View key={prestation.id} style={styles.prestationCard}>
+                <View style={styles.slotHeader}>
+                  <Text style={styles.slotTitle}>Prestation {prestationIndex + 1}</Text>
+                  <Pressable
+                    onPress={() => onRemovePrestation(category.id, prestation.id)}
+                    style={styles.linkButton}
+                  >
+                    <Text style={styles.linkButtonText}>Supprimer</Text>
+                  </Pressable>
+                </View>
+                <LabeledInput
+                  label="Prestation"
+                  value={prestation.serviceName}
+                  onChangeText={(value) => {
+                    setError(null);
+                    onUpdatePrestation(category.id, prestation.id, 'serviceName', value);
+                  }}
+                  placeholder="Ex: Forfait vidange"
+                />
+                <LabeledInput
+                  label="Prix"
+                  value={prestation.price}
+                  onChangeText={(value) => {
+                    setError(null);
+                    onUpdatePrestation(category.id, prestation.id, 'price', value);
+                  }}
+                  keyboardType="decimal-pad"
+                  placeholder="49.90"
+                />
+              </View>
+            ))}
+            <Pressable onPress={() => onAddPrestation(category.id)} style={styles.inlineSecondaryButton}>
+              <Text style={styles.linkButtonText}>Ajouter une prestation</Text>
+            </Pressable>
+          </View>
+        ))}
+        <Pressable onPress={onAddCategory} style={authSharedStyles.secondaryButton}>
+          <Text style={authSharedStyles.secondaryButtonText}>Ajouter une catégorie</Text>
+        </Pressable>
+        {error ? <Text style={authSharedStyles.errorText}>{error}</Text> : null}
+        <Pressable onPress={onNext} style={authSharedStyles.primaryButton}>
+          <Text style={authSharedStyles.primaryButtonText}>Continuer</Text>
+        </Pressable>
+      </WizardScreenLayout>
+    </ScrollView>
   );
 }
 
@@ -604,13 +606,13 @@ export function RegisterGarageHoursScreen({ navigation }: HoursProps) {
                     </Pressable>
                   </View>
                   <LabeledInput
-                    label="Ouverture (HH:MM)"
+                    label="Ouverture (HH:00 ou HH:30)"
                     value={slot.open}
                     onChangeText={(value) => onUpdateHour(day, slotIndex, 'open', value)}
                     placeholder="08:00"
                   />
                   <LabeledInput
-                    label="Fermeture (HH:MM)"
+                    label="Fermeture (HH:00 ou HH:30)"
                     value={slot.close}
                     onChangeText={(value) => onUpdateHour(day, slotIndex, 'close', value)}
                     placeholder="18:00"
