@@ -67,7 +67,7 @@ export type MyBooking = {
   total_amount: string;
   created_at: string;
   booking_status: { id_booking_status: number; label: string };
-  mechanic: { id_mechanic: number; name: string; city: string; address: string };
+  mechanic: { id_mechanic: number; name: string; city: string; address: string; phone?: string };
   vehicle: { id_vehicle: number; brand: string; model: string; license_plate: string; fuel_type: string };
   booking_garage_service: { garage_service: { id_garage_service: number; category: string; label: string; price: string } }[];
 };
