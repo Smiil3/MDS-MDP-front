@@ -36,6 +36,8 @@ export type GarageCard = {
   services: GarageServices | null;
   distanceMeters: number | null;
   averageRating?: number | null;
+  phone?: string | null;
+  email?: string | null;
 };
 
 export type NearbyGaragesResponse = {

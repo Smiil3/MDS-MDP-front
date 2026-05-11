@@ -418,8 +418,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 14,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+    shadowColor: '#000',
+    shadowOpacity: 0.025,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 2,
   },
   cardPressed: {
     opacity: 0.92,

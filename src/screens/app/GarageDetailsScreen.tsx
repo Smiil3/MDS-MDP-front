@@ -1,15 +1,18 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, Image } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { getGarageDetails, getGarageReviews } from '../../services/api/garageApi';
-import { GarageCard, GarageReview, GarageService, GarageServices, OpeningHours } from '../../types/garage';
+import { GarageCard, GarageService, GarageServices, OpeningHours, GarageReview } from '../../types/garage';
 import { HomeStackParamList } from '../../types/navigation';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'GarageDetails'>;
 
 const PLACEHOLDER_IMAGE =
   'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=1200&q=80';
+
+const ADDRESS_ICON = require('../../../assets/images/address.png');
+const DISTANCE_ICON = require('../../../assets/images/navigation.png');
 
 const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 
@@ -25,31 +28,18 @@ const DAY_LABELS: Record<(typeof DAY_KEYS)[number], string> = {
 
 const isClosedDay = (
   value: OpeningHours[string],
-): value is {
-  closed: true;
-} => typeof value === 'object' && !Array.isArray(value) && value !== null && 'closed' in value;
+): value is { closed: true } =>
+  typeof value === 'object' && !Array.isArray(value) && value !== null && 'closed' in value;
 
 const renderDaySlots = (openingHours: OpeningHours | null, day: (typeof DAY_KEYS)[number]) => {
-  if (!openingHours) {
-    return 'Non renseigné';
-  }
-
+  if (!openingHours) return 'Non renseigné';
   const dayValue = openingHours[day];
-  if (!dayValue) {
-    return 'Non renseigné';
-  }
-
+  if (!dayValue) return 'Non renseigné';
   if (Array.isArray(dayValue)) {
-    if (dayValue.length === 0) {
-      return 'Fermé';
-    }
+    if (dayValue.length === 0) return 'Fermé';
     return dayValue.map((slot) => `${slot.open}-${slot.close}`).join(' • ');
   }
-
-  if (isClosedDay(dayValue)) {
-    return 'Fermé';
-  }
-
+  if (isClosedDay(dayValue)) return 'Fermé';
   return `${dayValue.open}-${dayValue.close}`;
 };
 
@@ -73,11 +63,14 @@ const formatDate = (dateString: string) =>
     year: 'numeric',
   });
 
-const normalizeServices = (services: GarageServices | null): Array<{ category: string; items: GarageService[] }> => {
-  if (!services || services.length === 0) {
-    return [];
-  }
+const formatDistance = (distanceMeters: number | null) => {
+  if (distanceMeters === null) return null;
+  if (distanceMeters < 1000) return `${distanceMeters} m`;
+  return `${(distanceMeters / 1000).toFixed(1)} km`;
+};
 
+const normalizeServices = (services: GarageServices | null): Array<{ category: string; items: GarageService[] }> => {
+  if (!services || services.length === 0) return [];
   return services.flatMap((categoryObject) =>
     Object.entries(categoryObject).map(([category, items]) => ({
       category,
@@ -100,44 +93,33 @@ export function GarageDetailsScreen({ route, navigation }: Props) {
   const [reviewsTotal, setReviewsTotal] = useState(0);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewsExpanded, setReviewsExpanded] = useState(false);
-  const [hoursExpanded, setHoursExpanded] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
-
     const loadGarage = async () => {
       try {
         setIsLoading(true);
         setErrorMessage(null);
         const data = await getGarageDetails(garageId);
-        if (!isMounted) {
-          return;
-        }
+        if (!isMounted) return;
         setGarage(data);
       } catch {
         if (isMounted) {
           setErrorMessage("Impossible de charger les détails du garage pour l'instant.");
         }
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        if (isMounted) setIsLoading(false);
       }
     };
-
     loadGarage().catch(() => {
       if (isMounted) {
         setErrorMessage("Impossible de charger les détails du garage pour l'instant.");
         setIsLoading(false);
       }
     });
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [garageId]);
 
-  // Load page 1 on mount for the summary (average + total)
   useEffect(() => {
     let isMounted = true;
     const loadSummary = async () => {
@@ -154,7 +136,6 @@ export function GarageDetailsScreen({ route, navigation }: Props) {
     return () => { isMounted = false; };
   }, [garageId]);
 
-  // Load additional pages when the user taps "Voir plus"
   useEffect(() => {
     if (reviewsPage === 1) return;
     let isMounted = true;
@@ -174,6 +155,7 @@ export function GarageDetailsScreen({ route, navigation }: Props) {
   }, [reviewsPage, garageId]);
 
   const categorizedServices = useMemo(() => normalizeServices(garage?.services ?? null), [garage?.services]);
+  const distanceLabel = useMemo(() => formatDistance(garage?.distanceMeters ?? null), [garage?.distanceMeters]);
 
   if (isLoading) {
     return (
@@ -193,24 +175,42 @@ export function GarageDetailsScreen({ route, navigation }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Image source={{ uri: garage.imageUrl ?? PLACEHOLDER_IMAGE }} style={styles.image} />
-
-      <Text style={styles.title}>{garage.name}</Text>
-      <Text style={styles.subTitle}>{garage.city}</Text>
-      <Text style={styles.address}>{garage.address}</Text>
-
-      {garage.description?.trim() ? <Text style={styles.description}>{garage.description}</Text> : null}
-
-      {/* Reviews summary */}
-      {reviewsAverage !== null && (
-        <View style={styles.reviewsSummary}>
-          {renderStars(reviewsAverage, 18)}
-          <Text style={styles.reviewsSummaryText}>
-            {reviewsAverage.toFixed(1)}/5 — {reviewsTotal} avis
-          </Text>
+      {/* Zone bleue — image + titre + adresse */}
+      <View style={styles.blueHeader}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Text style={styles.backArrow}>←</Text>
+        </Pressable>
+        <Image source={{ uri: garage.imageUrl ?? PLACEHOLDER_IMAGE }} style={styles.image} />
+        <View style={styles.cardTitleRow}>
+          <Text style={styles.cardTitle}>{garage.name}</Text>
+          {reviewsAverage !== null ? (
+            <Text style={styles.cardRating}>⭐ {reviewsAverage.toFixed(1)}</Text>
+          ) : null}
         </View>
-      )}
+        <View style={styles.cardInfoRow}>
+          <Image source={ADDRESS_ICON} style={styles.cardRowIcon} />
+          <Text style={styles.cardAddress}>{garage.address}</Text>
+        </View>
+      </View>
 
+      {/* Bloc blanc — distance, À propos */}
+      <View style={styles.infoCard}>
+        {distanceLabel ? (
+          <View style={styles.cardInfoRow}>
+            <Image source={DISTANCE_ICON} style={styles.cardRowIcon} />
+            <Text style={styles.cardDistance}>À {distanceLabel} de vous</Text>
+          </View>
+        ) : null}
+        {garage.description?.trim() ? (
+          <>
+            <View style={styles.spacer} />
+            <Text style={styles.aboutTitle}>À propos</Text>
+            <Text style={styles.description}>{garage.description}</Text>
+          </>
+        ) : null}
+      </View>
+
+      {/* Prestations */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Prestations</Text>
         {categorizedServices.length === 0 ? (
@@ -234,17 +234,23 @@ export function GarageDetailsScreen({ route, navigation }: Props) {
         )}
       </View>
 
-      {/* Horaires accordion */}
+      {/* Infos pratiques — fixe (contact + horaires) */}
       <View style={styles.section}>
-        <Pressable
-          onPress={() => setHoursExpanded((v) => !v)}
-          style={styles.reviewsHeader}
-        >
-          <Text style={styles.sectionTitle}>Horaires</Text>
-          <Text style={styles.reviewsChevron}>{hoursExpanded ? '▲' : '▼'}</Text>
-        </Pressable>
-
-        {hoursExpanded && DAY_KEYS.map((day) => (
+        <Text style={styles.sectionTitle}>Infos pratiques</Text>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoIcon}>📞</Text>
+          <Text style={[styles.infoValue, !garage.phone && styles.infoEmpty]}>
+            {garage.phone ?? 'Non renseigné'}
+          </Text>
+        </View>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoIcon}>✉️</Text>
+          <Text style={[styles.infoValue, !garage.email && styles.infoEmpty]}>
+            {garage.email ?? 'Non renseigné'}
+          </Text>
+        </View>
+        <View style={styles.spacer} />
+        {DAY_KEYS.map((day) => (
           <View key={day} style={styles.row}>
             <Text style={styles.dayLabel}>{DAY_LABELS[day]}</Text>
             <Text style={styles.dayValue}>{renderDaySlots(garage.openingHours, day)}</Text>
@@ -252,8 +258,17 @@ export function GarageDetailsScreen({ route, navigation }: Props) {
         ))}
       </View>
 
-      {/* Reviews accordion */}
+      {/* Avis clients — notation visible, liste dépliable */}
       <View style={styles.section}>
+        {reviewsAverage !== null ? (
+          <View style={styles.reviewsSummaryRow}>
+            {renderStars(reviewsAverage, 18)}
+            <Text style={styles.reviewsSummaryText}>
+              {reviewsAverage.toFixed(1)}/5 · {reviewsTotal} avis
+            </Text>
+          </View>
+        ) : null}
+
         <Pressable
           onPress={() => setReviewsExpanded((v) => !v)}
           style={styles.reviewsHeader}
@@ -320,13 +335,20 @@ export function GarageDetailsScreen({ route, navigation }: Props) {
   );
 }
 
+const cardShadow = {
+  shadowColor: '#000',
+  shadowOpacity: 0.025,
+  shadowRadius: 22,
+  shadowOffset: { width: 0, height: 5 },
+  elevation: 2,
+} as const;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#f1f5f9',
   },
   content: {
-    padding: 16,
     gap: 12,
     paddingBottom: 28,
   },
@@ -334,45 +356,133 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#f1f5f9',
     padding: 24,
+  },
+  /* Zone bleue en haut */
+  blueHeader: {
+    backgroundColor: '#dbeafe',
+    paddingHorizontal: 16,
+    paddingTop: 52,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    gap: 12,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 52,
+    left: 16,
+    zIndex: 10,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    borderRadius: 999,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backArrow: {
+    fontSize: 20,
+    color: '#1a3fa6',
+    lineHeight: 22,
   },
   image: {
     width: '100%',
     height: 220,
     borderRadius: 14,
   },
-  title: {
-    fontSize: 24,
+
+  /* Bloc blanc — adresse, distance, À propos */
+  infoCard: {
+    marginHorizontal: 16,
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    gap: 4,
+    ...cardShadow,
+  },
+  cardTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1a3fa6',
+    flex: 1,
+  },
+  cardRating: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0f172a',
+    marginLeft: 8,
+  },
+  cardInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  cardRowIcon: {
+    width: 13,
+    height: 13,
+  },
+  cardAddress: {
+    fontSize: 13,
+    color: '#94a3b8',
+    flexShrink: 1,
+  },
+  cardDistance: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1a3fa6',
+  },
+
+  /* Sections */
+  section: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    marginHorizontal: 16,
+    gap: 8,
+    ...cardShadow,
+  },
+  sectionTitle: {
+    fontSize: 16,
     fontWeight: '700',
     color: '#0f172a',
-  },
-  subTitle: {
-    fontSize: 15,
-    color: '#334155',
-    fontWeight: '600',
-  },
-  address: {
-    fontSize: 14,
-    color: '#475569',
   },
   description: {
     fontSize: 14,
     color: '#334155',
     lineHeight: 20,
   },
-  section: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    padding: 12,
-    gap: 8,
-  },
-  sectionTitle: {
-    fontSize: 16,
+  aboutTitle: {
+    fontSize: 15,
     fontWeight: '700',
     color: '#0f172a',
+  },
+
+  /* Infos pratiques */
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  infoIcon: {
+    fontSize: 14,
+  },
+  infoValue: {
+    fontSize: 14,
+    color: '#334155',
+  },
+  infoEmpty: {
+    color: '#94a3b8',
+    fontStyle: 'italic',
+  },
+  spacer: {
+    height: 8,
   },
   row: {
     flexDirection: 'row',
@@ -388,6 +498,8 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     textAlign: 'right',
   },
+
+  /* Prestations */
   categoryBlock: {
     gap: 6,
     paddingTop: 4,
@@ -418,32 +530,12 @@ const styles = StyleSheet.create({
     color: '#64748b',
     fontStyle: 'italic',
   },
-  reserveButton: {
-    marginTop: 6,
-    backgroundColor: '#1d4ed8',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  reserveButtonText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 15,
-  },
-  errorText: {
-    color: '#b91c1c',
-    textAlign: 'center',
-  },
-  reviewsSummary: {
+
+  /* Avis clients */
+  reviewsSummaryRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
   },
   reviewsSummaryText: {
     fontSize: 15,
@@ -462,10 +554,13 @@ const styles = StyleSheet.create({
   reviewCard: {
     backgroundColor: '#f8fafc',
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
     padding: 12,
     gap: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.02,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 1,
   },
   reviewCardTop: {
     flexDirection: 'row',
@@ -494,12 +589,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#2563eb',
+    borderColor: '#1a3fa6',
     marginTop: 4,
   },
   loadMoreText: {
-    color: '#2563eb',
+    color: '#1a3fa6',
     fontWeight: '600',
     fontSize: 14,
+  },
+
+  /* Bouton réserver */
+  reserveButton: {
+    marginTop: 6,
+    marginHorizontal: 16,
+    backgroundColor: '#1a3fa6',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    ...cardShadow,
+  },
+  reserveButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  errorText: {
+    color: '#b91c1c',
+    textAlign: 'center',
   },
 });
