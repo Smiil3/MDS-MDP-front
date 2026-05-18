@@ -12,6 +12,8 @@ import {
 
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+const CHEVRON_ICON = require('../../../assets/images/chevron.png');
+
 import { useAuth } from '../../context/auth/AuthContext';
 import {
   createMyVehicle,
@@ -420,7 +422,7 @@ export function AccountScreen({ navigation }: Props) {
         onPress={() => setIsAddVehicleOpen((v) => !v)}
       >
         <Text style={styles.accordionTitle}>Ajouter un véhicule</Text>
-        <Text style={styles.accordionChevron}>{isAddVehicleOpen ? '▲' : '▼'}</Text>
+        <Image source={CHEVRON_ICON} style={[styles.accordionChevron, isAddVehicleOpen && styles.accordionChevronUp]} />
       </Pressable>
 
       {isAddVehicleOpen && (
@@ -761,8 +763,14 @@ const styles = StyleSheet.create({
     color: '#1a3fa6',
   },
   accordionChevron: {
-    fontSize: 13,
-    color: '#1a3fa6',
+    width: 14,
+    height: 14,
+    tintColor: '#94a3b8',
+    marginLeft: 4,
+    transform: [{ rotate: '90deg' }],
+  },
+  accordionChevronUp: {
+    transform: [{ rotate: '270deg' }],
   },
 
   /* ── MISE EN PAGE FORMULAIRES ── */

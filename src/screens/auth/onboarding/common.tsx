@@ -27,8 +27,7 @@ export function WizardScreenLayout({
         ) : (
           <View style={styles.backButtonPlaceholder} />
         )}
-        {stepLabel ? <Text style={styles.stepText}>{stepLabel}</Text> : null}
-      </View>
+        </View>
 
       <View style={styles.centered}>
         <Image source={require('../../../../assets/images/logo-mecanoo.png')} style={styles.logo} resizeMode="contain" />
@@ -88,7 +87,8 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#B3E5FF',
+    paddingTop: 52,
+    backgroundColor: '#B8DEF5',
   },
   header: {
     flexDirection: 'row',

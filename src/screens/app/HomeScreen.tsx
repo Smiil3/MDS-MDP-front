@@ -31,6 +31,19 @@ const DISTANCE_ICON = require('../../../assets/images/navigation.png');
 type ViewMode = 'cards' | 'map';
 type Props = NativeStackScreenProps<HomeStackParamList, 'HomeList'>;
 
+const renderStars = (rating: number, size = 15) => {
+  const filled = Math.round(rating);
+  return (
+    <View style={{ flexDirection: 'row', gap: 1 }}>
+      {Array.from({ length: 5 }, (_, i) => (
+        <Text key={i} style={{ fontSize: size, color: i < filled ? '#f59e0b' : '#94a3b8' }}>
+          ★
+        </Text>
+      ))}
+    </View>
+  );
+};
+
 const formatDistance = (distanceMeters: number | null) => {
   if (distanceMeters === null) {
     return null;
@@ -212,7 +225,10 @@ export function HomeScreen({ navigation }: Props) {
           <View style={styles.cardTitleRow}>
             <Text style={styles.cardTitle}>{item.name}</Text>
             {item.averageRating != null ? (
-              <Text style={styles.cardRating}>⭐ {item.averageRating.toFixed(1)}</Text>
+              <View style={styles.cardRatingRow}>
+                {renderStars(item.averageRating, 14)}
+                <Text style={styles.cardRating}>{item.averageRating.toFixed(1)}</Text>
+              </View>
             ) : null}
           </View>
           <View style={styles.cardInfoRow}>
@@ -447,11 +463,20 @@ const styles = StyleSheet.create({
     color: '#0f172a',
     flex: 1,
   },
+  cardRatingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    alignSelf: 'flex-start',
+  },
   cardRating: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
     color: '#0f172a',
-    marginLeft: 8,
   },
   cardInfoRow: {
     flexDirection: 'row',
