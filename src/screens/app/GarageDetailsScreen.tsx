@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
   },
   cardAddress: {
     fontSize: 13,
-    color: '#94a3b8',
+    color: '#64748b',
     flexShrink: 1,
   },
   cardDistance: {
@@ -627,20 +627,24 @@ const styles = StyleSheet.create({
   },
   serviceItem: {
     flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     backgroundColor: '#f1f5f9',
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 8,
-    gap: 2,
+    gap: 8,
   },
   serviceName: {
     color: '#1e293b',
     fontSize: 13,
+    flex: 1,
   },
   servicePrice: {
-    color: '#1d4ed8',
+    color: '#1a3fa6',
     fontWeight: '700',
-    fontSize: 16,
+    fontSize: 14,
   },
   emptyLabel: {
     color: '#94a3b8',

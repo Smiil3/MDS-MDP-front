@@ -92,7 +92,7 @@ export function LoginScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#B3E5FF',
+    backgroundColor: '#B8DEF5',
     padding: 20,
     justifyContent: 'center',
     alignItems: 'center',

@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { Platform, Pressable, Text } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useMemo, useState } from 'react';
 
 import { useAuth } from '../../context/auth/AuthContext';
@@ -347,24 +347,90 @@ export function RegisterDriverReviewScreen({ navigation }: ReviewProps) {
   };
 
   return (
-    <WizardScreenLayout
-      title="Vérification"
-      subtitle="Étape 6/6"
-      stepLabel="Particulier"
-      canGoBack
-      onGoBack={() => navigation.goBack()}
-    >
-      <Text style={{ color: '#fff' }}>Email: {driver.email}</Text>
-      <Text style={{ color: '#fff' }}>Prénom: {driver.firstName}</Text>
-      <Text style={{ color: '#fff' }}>Nom: {driver.lastName}</Text>
-      <Text style={{ color: '#fff' }}>Téléphone: {driver.phone}</Text>
-      <Text style={{ color: '#fff' }}>Date de naissance: {driver.birthDate}</Text>
-      {error ? <Text style={authSharedStyles.errorText}>{error}</Text> : null}
-      <Pressable onPress={onSubmit} disabled={isSubmitting} style={authSharedStyles.primaryButton}>
-        <Text style={authSharedStyles.primaryButtonText}>
-          {isSubmitting ? 'Création...' : 'Créer mon compte'}
-        </Text>
-      </Pressable>
-    </WizardScreenLayout>
+    <ScrollView style={{ flex: 1, backgroundColor: '#B8DEF5' }} contentContainerStyle={{ paddingBottom: 24 }}>
+      <WizardScreenLayout
+        title="Confirmation"
+        subtitle="Étape 6/6"
+        stepLabel="Particulier"
+        canGoBack
+        onGoBack={() => navigation.goBack()}
+      >
+        <View style={driverReviewStyles.reviewCard}>
+          <Text style={driverReviewStyles.reviewSectionTitle}>Informations</Text>
+          <View style={driverReviewStyles.reviewTagsGrid}>
+            <View style={driverReviewStyles.reviewTag}>
+              <Text style={driverReviewStyles.reviewTagLabel}>Prénom</Text>
+              <Text style={driverReviewStyles.reviewTagValue}>{driver.firstName}</Text>
+            </View>
+            <View style={driverReviewStyles.reviewTag}>
+              <Text style={driverReviewStyles.reviewTagLabel}>Nom</Text>
+              <Text style={driverReviewStyles.reviewTagValue}>{driver.lastName}</Text>
+            </View>
+            <View style={[driverReviewStyles.reviewTag, driverReviewStyles.reviewTagFull]}>
+              <Text style={driverReviewStyles.reviewTagLabel}>Email</Text>
+              <Text style={driverReviewStyles.reviewTagValue}>{driver.email}</Text>
+            </View>
+            <View style={driverReviewStyles.reviewTag}>
+              <Text style={driverReviewStyles.reviewTagLabel}>Téléphone</Text>
+              <Text style={driverReviewStyles.reviewTagValue}>{driver.phone}</Text>
+            </View>
+            <View style={driverReviewStyles.reviewTag}>
+              <Text style={driverReviewStyles.reviewTagLabel}>Date de naissance</Text>
+              <Text style={driverReviewStyles.reviewTagValue}>{driver.birthDate}</Text>
+            </View>
+          </View>
+        </View>
+
+        {error ? <Text style={authSharedStyles.errorText}>{error}</Text> : null}
+        <Pressable onPress={onSubmit} disabled={isSubmitting} style={authSharedStyles.primaryButton}>
+          <Text style={authSharedStyles.primaryButtonText}>
+            {isSubmitting ? 'Création...' : 'Créer mon compte'}
+          </Text>
+        </Pressable>
+      </WizardScreenLayout>
+    </ScrollView>
   );
 }
+
+const driverReviewStyles = StyleSheet.create({
+  reviewCard: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 14,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.025,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 2,
+  },
+  reviewSectionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1a3fa6',
+  },
+  reviewTagsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  reviewTag: {
+    width: '48%',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 10,
+    padding: 10,
+    gap: 2,
+  },
+  reviewTagFull: {
+    width: '100%',
+  },
+  reviewTagLabel: {
+    fontSize: 10,
+    color: '#94a3b8',
+  },
+  reviewTagValue: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#334155',
+  },
+});

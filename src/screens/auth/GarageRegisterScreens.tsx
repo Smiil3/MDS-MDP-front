@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '../../context/auth/AuthContext';
@@ -159,7 +159,7 @@ export function RegisterGarageInfoScreen({ navigation }: InfoProps) {
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#B3E5FF' }} contentContainerStyle={{ paddingBottom: 24 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: '#B8DEF5' }} contentContainerStyle={{ paddingBottom: 24 }}>
       <WizardScreenLayout
         title="Infos garage"
         subtitle="Étape 1/6"
@@ -268,7 +268,7 @@ export function RegisterGarageAddressScreen({ navigation }: AddressProps) {
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#B3E5FF' }} contentContainerStyle={{ paddingBottom: 24 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: '#B8DEF5' }} contentContainerStyle={{ paddingBottom: 24 }}>
       <WizardScreenLayout
         title="Adresse garage"
         subtitle="Étape 2/6"
@@ -437,7 +437,7 @@ export function RegisterGarageServicesScreen({ navigation }: ServicesProps) {
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#B3E5FF' }} contentContainerStyle={{ paddingBottom: 24 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: '#B8DEF5' }} contentContainerStyle={{ paddingBottom: 24 }}>
       <WizardScreenLayout
         title="Services"
         subtitle="Étape 3/6"
@@ -448,56 +448,61 @@ export function RegisterGarageServicesScreen({ navigation }: ServicesProps) {
         {garage.services.map((category, categoryIndex) => (
           <View key={category.id} style={styles.serviceCard}>
             <View style={styles.serviceHeader}>
-              <Text style={styles.serviceTitle}>Catégorie {categoryIndex + 1}</Text>
+              <TextInput
+                style={styles.categoryInput}
+                value={category.category}
+                onChangeText={(value) => {
+                  setError(null);
+                  onUpdateCategory(category.id, value);
+                }}
+                placeholder={`Nom de la catégorie ${categoryIndex + 1}`}
+                placeholderTextColor="#94a3b8"
+              />
               {garage.services.length > 1 ? (
                 <Pressable onPress={() => onRemoveCategory(category.id)} style={styles.linkButton}>
-                  <Text style={styles.linkButtonText}>Supprimer</Text>
+                  <Text style={styles.removePrestationText}>Supprimer</Text>
                 </Pressable>
               ) : null}
             </View>
-            <LabeledInput
-              label="Catégorie"
-              value={category.category}
-              onChangeText={(value) => {
-                setError(null);
-                onUpdateCategory(category.id, value);
-              }}
-              placeholder="Ex: Vidange"
-            />
-            {category.prestations.map((prestation, prestationIndex) => (
+            {category.prestations.map((prestation) => (
               <View key={prestation.id} style={styles.prestationCard}>
-                <View style={styles.slotHeader}>
-                  <Text style={styles.slotTitle}>Prestation {prestationIndex + 1}</Text>
-                  <Pressable
-                    onPress={() => onRemovePrestation(category.id, prestation.id)}
-                    style={styles.linkButton}
-                  >
-                    <Text style={styles.linkButtonText}>Supprimer</Text>
-                  </Pressable>
+                <View style={styles.prestationField}>
+                  <Text style={styles.prestationLabel}>Prestation</Text>
+                  <TextInput
+                    style={styles.prestationInput}
+                    value={prestation.serviceName}
+                    onChangeText={(value) => {
+                      setError(null);
+                      onUpdatePrestation(category.id, prestation.id, 'serviceName', value);
+                    }}
+                    placeholder="Ex: Forfait vidange"
+                    placeholderTextColor="#94a3b8"
+                  />
                 </View>
-                <LabeledInput
-                  label="Prestation"
-                  value={prestation.serviceName}
-                  onChangeText={(value) => {
-                    setError(null);
-                    onUpdatePrestation(category.id, prestation.id, 'serviceName', value);
-                  }}
-                  placeholder="Ex: Forfait vidange"
-                />
-                <LabeledInput
-                  label="Prix"
-                  value={prestation.price}
-                  onChangeText={(value) => {
-                    setError(null);
-                    onUpdatePrestation(category.id, prestation.id, 'price', value);
-                  }}
-                  keyboardType="decimal-pad"
-                  placeholder="49.90"
-                />
+                <View style={styles.prestationField}>
+                  <Text style={styles.prestationLabel}>Prix</Text>
+                  <TextInput
+                    style={styles.prestationInput}
+                    value={prestation.price}
+                    onChangeText={(value) => {
+                      setError(null);
+                      onUpdatePrestation(category.id, prestation.id, 'price', value);
+                    }}
+                    keyboardType="decimal-pad"
+                    placeholder="49.90"
+                    placeholderTextColor="#94a3b8"
+                  />
+                </View>
+                <Pressable
+                  onPress={() => onRemovePrestation(category.id, prestation.id)}
+                  style={styles.removePrestationButton}
+                >
+                  <Text style={styles.removePrestationText}>Supprimer</Text>
+                </Pressable>
               </View>
             ))}
-            <Pressable onPress={() => onAddPrestation(category.id)} style={styles.inlineSecondaryButton}>
-              <Text style={styles.linkButtonText}>Ajouter une prestation</Text>
+            <Pressable onPress={() => onAddPrestation(category.id)} style={styles.addPrestationButton}>
+              <Text style={styles.addPrestationText}>+</Text>
             </Pressable>
           </View>
         ))}
@@ -576,7 +581,7 @@ export function RegisterGarageHoursScreen({ navigation }: HoursProps) {
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#B3E5FF' }} contentContainerStyle={{ paddingBottom: 24 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: '#B8DEF5' }} contentContainerStyle={{ paddingBottom: 24 }}>
       <WizardScreenLayout
         title="Horaires"
         subtitle="Étape 4/6"
@@ -590,38 +595,41 @@ export function RegisterGarageHoursScreen({ navigation }: HoursProps) {
             <View key={day} style={styles.dayCard}>
               <View style={styles.dayHeader}>
                 <Text style={styles.dayTitle}>{dayLabels[day]}</Text>
-                {slots.length > 0 ? (
-                  <Pressable onPress={() => onSetDayClosed(day)} style={styles.linkButton}>
-                    <Text style={styles.linkButtonText}>Marquer fermé</Text>
-                  </Pressable>
-                ) : null}
               </View>
               {slots.length === 0 ? <Text style={styles.closedText}>Fermé</Text> : null}
               {slots.map((slot, slotIndex) => (
                 <View key={`${day}-${slotIndex}`} style={styles.slotCard}>
-                  <View style={styles.slotHeader}>
-                    <Text style={styles.slotTitle}>Créneau {slotIndex + 1}</Text>
-                    <Pressable onPress={() => onRemoveHour(day, slotIndex)} style={styles.linkButton}>
-                      <Text style={styles.linkButtonText}>Supprimer</Text>
-                    </Pressable>
+                  <View style={styles.prestationField}>
+                    <Text style={styles.prestationLabel}>Ouverture</Text>
+                    <TextInput
+                      style={styles.prestationInput}
+                      value={slot.open}
+                      onChangeText={(value) => onUpdateHour(day, slotIndex, 'open', value)}
+                      placeholder="08:00"
+                      placeholderTextColor="#94a3b8"
+                    />
                   </View>
-                  <LabeledInput
-                    label="Ouverture (HH:00 ou HH:30)"
-                    value={slot.open}
-                    onChangeText={(value) => onUpdateHour(day, slotIndex, 'open', value)}
-                    placeholder="08:00"
-                  />
-                  <LabeledInput
-                    label="Fermeture (HH:00 ou HH:30)"
-                    value={slot.close}
-                    onChangeText={(value) => onUpdateHour(day, slotIndex, 'close', value)}
-                    placeholder="18:00"
-                  />
+                  <View style={styles.prestationField}>
+                    <Text style={styles.prestationLabel}>Fermeture</Text>
+                    <TextInput
+                      style={styles.prestationInput}
+                      value={slot.close}
+                      onChangeText={(value) => onUpdateHour(day, slotIndex, 'close', value)}
+                      placeholder="18:00"
+                      placeholderTextColor="#94a3b8"
+                    />
+                  </View>
                 </View>
               ))}
-              <Pressable onPress={() => onAddHour(day)} style={authSharedStyles.secondaryButton}>
-                <Text style={authSharedStyles.secondaryButtonText}>Ajouter un créneau</Text>
-              </Pressable>
+              {slots.length === 0 ? (
+                <Pressable onPress={() => onAddHour(day)} style={styles.closedButton}>
+                  <Text style={styles.closedButtonText}>Annuler</Text>
+                </Pressable>
+              ) : (
+                <Pressable onPress={() => onSetDayClosed(day)} style={styles.closedButton}>
+                  <Text style={styles.closedButtonText}>Signaler comme fermé</Text>
+                </Pressable>
+              )}
             </View>
           );
         })}
@@ -744,45 +752,83 @@ export function RegisterGarageReviewScreen({ navigation }: ReviewProps) {
   };
 
   return (
+    <ScrollView style={{ flex: 1, backgroundColor: '#B8DEF5' }} contentContainerStyle={{ paddingBottom: 24 }}>
     <WizardScreenLayout
-      title="Vérification"
+      title="Confirmation"
       subtitle="Étape 6/6"
       stepLabel="Garage"
       canGoBack
       onGoBack={() => navigation.goBack()}
     >
-      <Text style={{ color: '#fff' }}>Garage: {garage.name}</Text>
-      <Text style={{ color: '#fff' }}>Adresse: {garage.address}</Text>
-      <Text style={{ color: '#fff' }}>
-        Ville: {garage.zipCode} {garage.city}
-      </Text>
-      <Text style={styles.sectionTitle}>Services</Text>
-      {servicesPayload.map((categoryBlock) =>
-        Object.entries(categoryBlock).map(([category, services]) => (
-          <View key={category} style={styles.reviewBlock}>
-            <Text style={styles.reviewBlockTitle}>{category}</Text>
-            {services.map((service, index) => (
-              <Text key={`${category}-${service.serviceName}-${index}`} style={{ color: '#fff' }}>
-                - {service.serviceName} ({service.price} EUR)
-              </Text>
-            ))}
+      <View style={styles.reviewCard}>
+
+        {/* Informations générales */}
+        <Text style={styles.reviewSectionTitle}>Informations</Text>
+        <View style={styles.reviewTagsGrid}>
+          <View style={styles.reviewTag}>
+            <Text style={styles.reviewTagLabel}>Nom du garage</Text>
+            <Text style={styles.reviewTagValue}>{garage.name}</Text>
           </View>
-        )),
-      )}
-      <Text style={styles.sectionTitle}>Horaires</Text>
-      {dayKeys.map((day) => {
-        const slots = garage.openingHours[day];
-        const label =
-          slots.length === 0
-            ? 'Fermé'
-            : slots.map((slot) => `${slot.open}-${slot.close}`).join(', ');
-        return (
-          <Text key={`review-${day}`} style={{ color: '#fff' }}>
-            {dayLabels[day]}: {label}
-          </Text>
-        );
-      })}
-      <Text style={{ color: '#fff' }}>Email: {garage.email}</Text>
+          <View style={styles.reviewTag}>
+            <Text style={styles.reviewTagLabel}>Email</Text>
+            <Text style={styles.reviewTagValue}>{garage.email}</Text>
+          </View>
+          <View style={[styles.reviewTag, styles.reviewTagFull]}>
+            <Text style={styles.reviewTagLabel}>Adresse</Text>
+            <Text style={styles.reviewTagValue}>{garage.address}</Text>
+          </View>
+          <View style={styles.reviewTag}>
+            <Text style={styles.reviewTagLabel}>Code postal</Text>
+            <Text style={styles.reviewTagValue}>{garage.zipCode}</Text>
+          </View>
+          <View style={styles.reviewTag}>
+            <Text style={styles.reviewTagLabel}>Ville</Text>
+            <Text style={styles.reviewTagValue}>{garage.city}</Text>
+          </View>
+        </View>
+
+        <View style={styles.reviewDivider} />
+
+        {/* Services */}
+        <Text style={styles.reviewSectionTitle}>Services</Text>
+        {servicesPayload.map((categoryBlock) =>
+          Object.entries(categoryBlock).map(([category, services]) => (
+            <View key={category} style={styles.reviewCategoryBlock}>
+              <Text style={styles.reviewCategoryTitle}>{category}</Text>
+              <View style={styles.reviewTagsGrid}>
+                {services.map((service, index) => (
+                  <View key={`${category}-${index}`} style={styles.reviewTag}>
+                    <Text style={styles.reviewTagLabel}>{service.serviceName}</Text>
+                    <Text style={styles.reviewTagValue}>{service.price} €</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ))
+        )}
+
+        <View style={styles.reviewDivider} />
+
+        {/* Horaires */}
+        <Text style={styles.reviewSectionTitle}>Horaires</Text>
+        <View style={styles.reviewTagsGrid}>
+          {dayKeys.map((day) => {
+            const slots = garage.openingHours[day];
+            const label =
+              slots.length === 0
+                ? 'Fermé'
+                : slots.map((slot) => `${slot.open}-${slot.close}`).join(', ');
+            return (
+              <View key={day} style={styles.reviewTag}>
+                <Text style={styles.reviewTagLabel}>{dayLabels[day]}</Text>
+                <Text style={styles.reviewTagValue}>{label}</Text>
+              </View>
+            );
+          })}
+        </View>
+
+      </View>
+
       {error ? <Text style={authSharedStyles.errorText}>{error}</Text> : null}
       <Pressable onPress={onSubmit} disabled={isSubmitting} style={authSharedStyles.primaryButton}>
         <Text style={authSharedStyles.primaryButtonText}>
@@ -790,6 +836,7 @@ export function RegisterGarageReviewScreen({ navigation }: ReviewProps) {
         </Text>
       </Pressable>
     </WizardScreenLayout>
+    </ScrollView>
   );
 }
 
@@ -834,11 +881,17 @@ const styles = StyleSheet.create({
   serviceHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 8,
   },
-  serviceTitle: {
+  categoryInput: {
+    flex: 1,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    fontWeight: '600',
     color: '#0f172a',
-    fontWeight: '700',
   },
   linkButton: {
     paddingHorizontal: 8,
@@ -848,32 +901,74 @@ const styles = StyleSheet.create({
     color: '#2563eb',
     fontWeight: '600',
   },
-  inlineSecondaryButton: {
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-    borderRadius: 8,
-    backgroundColor: '#eff6ff',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+  addPrestationButton: {
+    alignSelf: 'center',
+    width: 32,
+    height: 32,
+    borderRadius: 999,
+    backgroundColor: '#1a3fa6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addPrestationText: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '700',
+    lineHeight: 22,
+  },
+  closedButton: {
+    alignSelf: 'center',
+    borderRadius: 999,
+    backgroundColor: '#1a3fa6',
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closedButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
   },
   prestationCard: {
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
     borderRadius: 8,
-    backgroundColor: '#B3E5FF',
+    backgroundColor: '#eff6ff',
     padding: 10,
     gap: 6,
+  },
+  prestationField: {
+    gap: 4,
+  },
+  prestationLabel: {
+    color: '#0f172a',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  prestationInput: {
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+    fontSize: 14,
+    color: '#0f172a',
+  },
+  removePrestationButton: {
+    alignSelf: 'flex-end',
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+  },
+  removePrestationText: {
+    color: '#1a3fa6',
+    fontWeight: '600',
+    fontSize: 13,
   },
   closedText: {
     color: '#64748b',
     fontStyle: 'italic',
   },
   slotCard: {
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
     borderRadius: 8,
-    backgroundColor: '#B3E5FF',
+    backgroundColor: '#eff6ff',
     padding: 10,
     gap: 6,
   },
@@ -891,11 +986,57 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 8,
   },
-  reviewBlock: {
+  reviewCard: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 14,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.025,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 2,
+  },
+  reviewSectionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1a3fa6',
+  },
+  reviewTagsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  reviewTag: {
+    width: '48%',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 10,
+    padding: 10,
     gap: 2,
   },
-  reviewBlockTitle: {
-    color: '#fff',
+  reviewTagFull: {
+    width: '100%',
+  },
+  reviewTagLabel: {
+    fontSize: 10,
+    color: '#94a3b8',
+  },
+  reviewTagValue: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  reviewDivider: {
+    height: 1,
+    backgroundColor: '#f1f5f9',
+  },
+  reviewCategoryBlock: {
+    gap: 6,
+  },
+  reviewCategoryTitle: {
+    fontSize: 13,
     fontWeight: '700',
+    color: '#0f172a',
+    textTransform: 'capitalize',
   },
 });

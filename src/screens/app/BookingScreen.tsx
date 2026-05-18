@@ -344,11 +344,6 @@ export function BookingScreen({ route, navigation }: Props) {
                     onPress={() => setSelectedVehicleId(vehicle.id)}
                     style={[styles.vehicleCard, selected && styles.vehicleCardSelected]}
                   >
-                    <View style={styles.vehicleCheckRow}>
-                      <View style={[styles.checkbox, selected && styles.checkboxCheckedOnDark]}>
-                        {selected ? <Image source={CHECK_ICON} style={styles.checkIcon} /> : null}
-                      </View>
-                    </View>
                     <Text style={[styles.vehicleModel, selected && styles.vehicleModelSelected]}>
                       {vehicle.brand} {vehicle.model}
                     </Text>
@@ -391,15 +386,8 @@ export function BookingScreen({ route, navigation }: Props) {
                             onPress={() => toggleService(key)}
                             style={[styles.serviceItem, checked && styles.serviceItemChecked]}
                           >
-                            <View style={styles.serviceItemTop}>
-                              <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
-                                {checked ? <Image source={CHECK_ICON} style={styles.checkIcon} /> : null}
-                              </View>
-                            </View>
-                            <View style={styles.serviceItemBottom}>
-                              <Text style={[styles.serviceName, checked && styles.serviceNameChecked]}>{service.serviceName}</Text>
-                              <Text style={[styles.servicePrice, checked && styles.servicePriceChecked]}>{service.price} €</Text>
-                            </View>
+                            <Text style={[styles.serviceName, checked && styles.serviceNameChecked]}>{service.serviceName}</Text>
+                            <Text style={[styles.servicePrice, checked && styles.servicePriceChecked]}>{service.price} €</Text>
                           </Pressable>
                         );
                       })}
@@ -703,11 +691,14 @@ const styles = StyleSheet.create({
   },
   serviceItem: {
     flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     backgroundColor: '#f1f5f9',
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 8,
-    gap: 4,
+    gap: 8,
   },
   serviceItemChecked: {
     backgroundColor: '#1a3fa6',
