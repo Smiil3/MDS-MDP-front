@@ -13,6 +13,10 @@ const PLACEHOLDER_IMAGE =
 
 const ADDRESS_ICON = require('../../../assets/images/address.png');
 const DISTANCE_ICON = require('../../../assets/images/navigation.png');
+const PHONE_ICON = require('../../../assets/images/phone.png');
+const MAIL_ICON = require('../../../assets/images/mail.png');
+const CHEVRON_ICON = require('../../../assets/images/chevron.png');
+const PLANNING_ICON = require('../../../assets/images/planning.png');
 
 const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 
@@ -48,7 +52,7 @@ const renderStars = (rating: number, size = 15) => {
   return (
     <View style={{ flexDirection: 'row', gap: 1 }}>
       {Array.from({ length: 5 }, (_, i) => (
-        <Text key={i} style={{ fontSize: size, color: i < filled ? '#f59e0b' : '#d1d5db' }}>
+        <Text key={i} style={{ fontSize: size, color: i < filled ? '#f59e0b' : '#94a3b8' }}>
           ★
         </Text>
       ))}
@@ -85,6 +89,7 @@ export function GarageDetailsScreen({ route, navigation }: Props) {
   const [garage, setGarage] = useState<GarageCard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
 
   const [reviews, setReviews] = useState<GarageReview[]>([]);
   const [reviewsPage, setReviewsPage] = useState(1);
@@ -174,107 +179,144 @@ export function GarageDetailsScreen({ route, navigation }: Props) {
   }
 
   return (
+    <View style={styles.screen}>
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Zone bleue — image + titre + adresse */}
+      <Image
+        source={require('../../../assets/images/logo-mecanoo.png')}
+        style={styles.headerLogo}
+      />
       <View style={styles.blueHeader}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backArrow}>←</Text>
-        </Pressable>
         <Image source={{ uri: garage.imageUrl ?? PLACEHOLDER_IMAGE }} style={styles.image} />
-        <View style={styles.cardTitleRow}>
+        <View style={styles.headerContent}>
           <Text style={styles.cardTitle}>{garage.name}</Text>
           {reviewsAverage !== null ? (
-            <Text style={styles.cardRating}>⭐ {reviewsAverage.toFixed(1)}</Text>
+            <View style={styles.cardRatingRow}>
+              {renderStars(reviewsAverage, 14)}
+              <Text style={styles.cardRating}>{reviewsAverage.toFixed(1)}</Text>
+              <Text style={styles.reviewsCount}> ({reviewsTotal} avis)</Text>
+            </View>
           ) : null}
-        </View>
-        <View style={styles.cardInfoRow}>
-          <Image source={ADDRESS_ICON} style={styles.cardRowIcon} />
-          <Text style={styles.cardAddress}>{garage.address}</Text>
+          <View style={styles.cardInfoRow}>
+            <Image source={ADDRESS_ICON} style={styles.cardRowIcon} />
+            <Text style={styles.cardAddress}>{garage.address}</Text>
+          </View>
+          <View style={styles.spacer} />
+          <View style={styles.aboutCard}>
+            {garage.description?.trim() ? (
+              <>
+                <Text style={styles.aboutTitle}>À propos</Text>
+                <Text style={styles.description}>{garage.description}</Text>
+                <View style={[styles.divider, { backgroundColor: '#94a3b8' }]} />
+              </>
+            ) : null}
+            <View style={styles.infoRow}>
+              <Image source={PHONE_ICON} style={styles.infoIconImg} />
+              <Text style={[styles.infoValue, !garage.phone && styles.infoEmpty]}>
+                {garage.phone ?? 'Non renseigné'}
+              </Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Image source={MAIL_ICON} style={styles.infoIconImg} />
+              <Text style={[styles.infoValue, !garage.email && styles.infoEmpty]}>
+                {garage.email ?? 'Non renseigné'}
+              </Text>
+            </View>
+          </View>
         </View>
       </View>
 
-      {/* Bloc blanc — distance, À propos */}
-      <View style={styles.infoCard}>
-        {distanceLabel ? (
+      {/* Bloc blanc — distance */}
+      {distanceLabel ? (
+        <View style={styles.infoCard}>
           <View style={styles.cardInfoRow}>
             <Image source={DISTANCE_ICON} style={styles.cardRowIcon} />
             <Text style={styles.cardDistance}>À {distanceLabel} de vous</Text>
           </View>
-        ) : null}
-        {garage.description?.trim() ? (
-          <>
-            <View style={styles.spacer} />
-            <Text style={styles.aboutTitle}>À propos</Text>
-            <Text style={styles.description}>{garage.description}</Text>
-          </>
-        ) : null}
-      </View>
+        </View>
+      ) : null}
 
       {/* Prestations */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Prestations</Text>
-        {categorizedServices.length === 0 ? (
+      <Text style={styles.sectionTitle}>Prestations</Text>
+      {categorizedServices.length === 0 ? (
+        <View style={styles.categoryCard}>
           <Text style={styles.emptyLabel}>Aucune prestation renseignée.</Text>
-        ) : (
-          categorizedServices.map((category) => (
-            <View key={category.category} style={styles.categoryBlock}>
-              <Text style={styles.categoryTitle}>{category.category}</Text>
-              {category.items.length === 0 ? (
-                <Text style={styles.emptyLabel}>Aucune prestation dans cette catégorie.</Text>
-              ) : (
-                category.items.map((service, index) => (
-                  <View key={`${category.category}-${index}`} style={styles.serviceRow}>
-                    <Text style={styles.serviceName}>{service.serviceName}</Text>
-                    <Text style={styles.servicePrice}>{service.price} €</Text>
-                  </View>
-                ))
+        </View>
+      ) : (
+        categorizedServices.map((category) => {
+          const isExpanded = !!expandedCategories[category.category];
+          return (
+            <View key={category.category} style={styles.categoryCard}>
+              <Pressable
+                onPress={() => setExpandedCategories((prev) => ({ ...prev, [category.category]: !prev[category.category] }))}
+                style={styles.categoryHeader}
+              >
+                <Text style={styles.categoryTitle}>{category.category}</Text>
+                <Image source={CHEVRON_ICON} style={[styles.chevronIcon, isExpanded && styles.chevronUp]} />
+              </Pressable>
+              {isExpanded && (
+                category.items.length === 0 ? (
+                  <Text style={styles.emptyLabel}>Aucune prestation dans cette catégorie.</Text>
+                ) : (
+                  Array.from({ length: Math.ceil(category.items.length / 2) }, (_, rowIndex) => {
+                    const pair = category.items.slice(rowIndex * 2, rowIndex * 2 + 2);
+                    return (
+                      <View key={`${category.category}-row-${rowIndex}`} style={styles.serviceGrid}>
+                        {pair.map((service, i) => (
+                          <View key={i} style={styles.serviceItem}>
+                            <Text style={styles.serviceName}>{service.serviceName}</Text>
+                            <Text style={styles.servicePrice}>{service.price} €</Text>
+                          </View>
+                        ))}
+                        {pair.length === 1 && <View style={[styles.serviceItem, { backgroundColor: 'transparent' }]} />}
+                      </View>
+                    );
+                  })
+                )
               )}
             </View>
-          ))
-        )}
-      </View>
+          );
+        })
+      )}
 
-      {/* Infos pratiques — fixe (contact + horaires) */}
+      {/* Horaires */}
+      <Text style={styles.sectionTitle}>Horaires</Text>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Infos pratiques</Text>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoIcon}>📞</Text>
-          <Text style={[styles.infoValue, !garage.phone && styles.infoEmpty]}>
-            {garage.phone ?? 'Non renseigné'}
-          </Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoIcon}>✉️</Text>
-          <Text style={[styles.infoValue, !garage.email && styles.infoEmpty]}>
-            {garage.email ?? 'Non renseigné'}
-          </Text>
-        </View>
-        <View style={styles.spacer} />
-        {DAY_KEYS.map((day) => (
-          <View key={day} style={styles.row}>
-            <Text style={styles.dayLabel}>{DAY_LABELS[day]}</Text>
-            <Text style={styles.dayValue}>{renderDaySlots(garage.openingHours, day)}</Text>
-          </View>
-        ))}
+        {DAY_KEYS.map((day, index) => {
+          const slot = renderDaySlots(garage.openingHours, day);
+          const isClosed = slot === 'Fermé';
+          return (
+            <View key={day}>
+              <View style={styles.dayRow}>
+                <Text style={styles.dayLabel}>{DAY_LABELS[day]}</Text>
+                <Text style={[styles.dayValue, isClosed && styles.dayValueClosed]}>{slot}</Text>
+              </View>
+              {index < DAY_KEYS.length - 1 && <View style={styles.divider} />}
+            </View>
+          );
+        })}
       </View>
 
       {/* Avis clients — notation visible, liste dépliable */}
+      <Text style={styles.sectionTitle}>Avis clients</Text>
       <View style={styles.section}>
-        {reviewsAverage !== null ? (
-          <View style={styles.reviewsSummaryRow}>
-            {renderStars(reviewsAverage, 18)}
-            <Text style={styles.reviewsSummaryText}>
-              {reviewsAverage.toFixed(1)}/5 · {reviewsTotal} avis
-            </Text>
-          </View>
-        ) : null}
-
         <Pressable
           onPress={() => setReviewsExpanded((v) => !v)}
           style={styles.reviewsHeader}
         >
-          <Text style={styles.sectionTitle}>Avis clients</Text>
-          <Text style={styles.reviewsChevron}>{reviewsExpanded ? '▲' : '▼'}</Text>
+          {reviewsAverage !== null ? (
+            <>
+              <View style={styles.reviewsSummaryRow}>
+                {renderStars(reviewsAverage, 14)}
+                <Text style={styles.reviewsSummaryText}>{reviewsAverage.toFixed(1)}/5</Text>
+              </View>
+              <View style={styles.reviewsSummaryRow}>
+                <Text style={styles.reviewsCount}>{reviewsTotal} avis</Text>
+                <Image source={CHEVRON_ICON} style={[styles.chevronIcon, reviewsExpanded && styles.chevronUp]} />
+              </View>
+            </>
+          ) : (
+            <Image source={CHEVRON_ICON} style={[styles.chevronIcon, reviewsExpanded && styles.chevronUp]} />
+          )}
         </Pressable>
 
         {reviewsExpanded && (
@@ -314,24 +356,26 @@ export function GarageDetailsScreen({ route, navigation }: Props) {
         )}
       </View>
 
-      <Pressable
-        onPress={() => {
-          navigation.navigate('BookingScreen', {
-            garageId: garage.id,
-            mechanicId: garage.id,
-            garageName: garage.name,
-            garageAddress: garage.address,
-            garageCity: garage.city,
-            garageImageUrl: garage.imageUrl,
-            services: garage.services,
-            openingHours: garage.openingHours,
-          });
-        }}
-        style={styles.reserveButton}
-      >
-        <Text style={styles.reserveButtonText}>Réserver</Text>
-      </Pressable>
     </ScrollView>
+
+    <Pressable
+      onPress={() => {
+        navigation.navigate('BookingScreen', {
+          garageId: garage.id,
+          mechanicId: garage.id,
+          garageName: garage.name,
+          garageAddress: garage.address,
+          garageCity: garage.city,
+          garageImageUrl: garage.imageUrl,
+          services: garage.services,
+          openingHours: garage.openingHours,
+        });
+      }}
+      style={styles.fab}
+    >
+      <Image source={PLANNING_ICON} style={styles.fabIcon} />
+    </Pressable>
+    </View>
   );
 }
 
@@ -350,7 +394,7 @@ const styles = StyleSheet.create({
   },
   content: {
     gap: 12,
-    paddingBottom: 28,
+    paddingBottom: 100,
   },
   centered: {
     flex: 1,
@@ -362,17 +406,19 @@ const styles = StyleSheet.create({
   /* Zone bleue en haut */
   blueHeader: {
     backgroundColor: '#dbeafe',
-    paddingHorizontal: 16,
-    paddingTop: 52,
+    marginHorizontal: 16,
     paddingBottom: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    gap: 12,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   backButton: {
     position: 'absolute',
-    top: 52,
-    left: 16,
+    top: 12,
+    left: 12,
     zIndex: 10,
     backgroundColor: 'rgba(255,255,255,0.6)',
     borderRadius: 999,
@@ -381,15 +427,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backArrow: {
-    fontSize: 20,
-    color: '#1a3fa6',
-    lineHeight: 22,
+  headerLogo: {
+    width: 55,
+    height: 28,
+    resizeMode: 'contain',
+    alignSelf: 'center',
+    marginTop: 52,
   },
   image: {
     width: '100%',
     height: 220,
-    borderRadius: 14,
+    borderTopLeftRadius: 14,
+    borderTopRightRadius: 14,
+  },
+  headerContent: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    gap: 8,
   },
 
   /* Bloc blanc — adresse, distance, À propos */
@@ -402,22 +456,26 @@ const styles = StyleSheet.create({
     gap: 4,
     ...cardShadow,
   },
-  cardTitleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
   cardTitle: {
     fontSize: 20,
     fontWeight: '700',
     color: '#1a3fa6',
     flex: 1,
   },
+  cardRatingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.55)',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    alignSelf: 'flex-start',
+  },
   cardRating: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
     color: '#0f172a',
-    marginLeft: 8,
   },
   cardInfoRow: {
     flexDirection: 'row',
@@ -449,7 +507,14 @@ const styles = StyleSheet.create({
     ...cardShadow,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0f172a',
+    paddingHorizontal: 16,
+    marginTop: 4,
+  },
+  sectionTitleInner: {
+    fontSize: 18,
     fontWeight: '700',
     color: '#0f172a',
   },
@@ -457,6 +522,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#334155',
     lineHeight: 20,
+  },
+  aboutCard: {
+    backgroundColor: 'rgba(255,255,255,0.55)',
+    borderRadius: 12,
+    padding: 10,
+    gap: 4,
+  },
+  hoursCard: {
+    backgroundColor: '#eff6ff',
+    borderRadius: 12,
+    padding: 10,
+    gap: 6,
   },
   aboutTitle: {
     fontSize: 15,
@@ -470,12 +547,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  infoIcon: {
-    fontSize: 14,
+  infoIconImg: {
+    width: 15,
+    height: 15,
+    tintColor: '#1a3fa6',
   },
   infoValue: {
     fontSize: 14,
-    color: '#334155',
+    color: '#1a3fa6',
+    fontWeight: '600',
   },
   infoEmpty: {
     color: '#94a3b8',
@@ -484,83 +564,123 @@ const styles = StyleSheet.create({
   spacer: {
     height: 8,
   },
-  row: {
+  divider: {
+    height: 1,
+    backgroundColor: '#f1f5f9',
+    marginVertical: 4,
+  },
+  hoursContainer: {
+    backgroundColor: '#f1f5f9',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    gap: 4,
+  },
+  dayRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 8,
+    alignItems: 'center',
+    paddingVertical: 4,
   },
   dayLabel: {
-    color: '#334155',
+    fontSize: 13,
     fontWeight: '600',
+    color: '#334155',
   },
   dayValue: {
-    color: '#0f766e',
-    flexShrink: 1,
-    textAlign: 'right',
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#1a3fa6',
+  },
+  dayValueClosed: {
+    color: '#94a3b8',
+    fontStyle: 'italic',
+    fontWeight: '400',
   },
 
-  /* Prestations */
-  categoryBlock: {
-    gap: 6,
-    paddingTop: 4,
+  categoryCard: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    marginHorizontal: 16,
+    padding: 14,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.025,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 2,
   },
-  categoryTitle: {
-    fontWeight: '700',
-    color: '#1e293b',
-    textTransform: 'capitalize',
-  },
-  serviceRow: {
+  categoryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  categoryTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1a3fa6',
+    textTransform: 'capitalize',
+  },
+  serviceGrid: {
+    flexDirection: 'row',
     gap: 8,
-    borderRadius: 8,
+  },
+  serviceItem: {
+    flex: 1,
     backgroundColor: '#f1f5f9',
+    borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 8,
+    gap: 2,
   },
   serviceName: {
     color: '#1e293b',
-    flexShrink: 1,
+    fontSize: 13,
   },
   servicePrice: {
     color: '#1d4ed8',
     fontWeight: '700',
+    fontSize: 16,
   },
   emptyLabel: {
-    color: '#64748b',
+    color: '#94a3b8',
     fontStyle: 'italic',
   },
 
-  /* Avis clients */
-  reviewsSummaryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  reviewsSummaryText: {
-    fontSize: 15,
-    color: '#334155',
-    fontWeight: '600',
-  },
   reviewsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  reviewsChevron: {
+  reviewsSummaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  reviewsSummaryText: {
     fontSize: 13,
-    color: '#64748b',
+    color: '#0f172a',
+    fontWeight: '700',
+  },
+  reviewsCount: {
+    fontSize: 13,
+    color: '#94a3b8',
+  },
+  chevronIcon: {
+    width: 14,
+    height: 14,
+    tintColor: '#94a3b8',
+    marginLeft: 4,
+    transform: [{ rotate: '90deg' }],
+  },
+  chevronUp: {
+    transform: [{ rotate: '270deg' }],
   },
   reviewCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#eff6ff',
     borderRadius: 10,
     padding: 12,
     gap: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.02,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 1,
   },
   reviewCardTop: {
     flexDirection: 'row',
@@ -587,7 +707,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingVertical: 8,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 999,
     borderWidth: 1,
     borderColor: '#1a3fa6',
     marginTop: 4,
@@ -598,20 +718,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  /* Bouton réserver */
-  reserveButton: {
-    marginTop: 6,
-    marginHorizontal: 16,
-    backgroundColor: '#1a3fa6',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    ...cardShadow,
+  screen: {
+    flex: 1,
+    backgroundColor: '#f1f5f9',
   },
-  reserveButtonText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 15,
+  /* Bouton FAB réserver */
+  fab: {
+    position: 'absolute',
+    bottom: 32,
+    right: 24,
+    backgroundColor: '#1a3fa6',
+    borderRadius: 999,
+    width: 60,
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  fabIcon: {
+    width: 28,
+    height: 28,
+    tintColor: '#fff',
   },
   errorText: {
     color: '#b91c1c',
