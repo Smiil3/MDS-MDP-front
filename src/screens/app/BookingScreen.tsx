@@ -1,8 +1,9 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  ImageBackground,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -21,6 +22,10 @@ type Props = NativeStackScreenProps<HomeStackParamList, 'BookingScreen'>;
 
 const PLACEHOLDER_IMAGE =
   'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=1200&q=80';
+
+const ADDRESS_ICON = require('../../../assets/images/address.png');
+const CHEVRON_ICON = require('../../../assets/images/chevron.png');
+const CHECK_ICON = require('../../../assets/images/check.png');
 
 const DAY_JS_TO_KEY: Record<number, string> = {
   0: 'sun',
@@ -97,6 +102,12 @@ export function BookingScreen({ route, navigation }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [confirmedDate, setConfirmedDate] = useState<string | null>(null);
+  const [confirmedSlot, setConfirmedSlot] = useState<string | null>(null);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
 
   useEffect(() => {
     let isMounted = true;
@@ -242,6 +253,8 @@ export function BookingScreen({ route, navigation }: Props) {
         id_vehicle: selectedVehicleId,
         service_ids: selectedServiceIds,
       });
+      setConfirmedDate(selectedDate);
+      setConfirmedSlot(selectedSlot);
       setSubmitSuccess(true);
     } catch {
       setSubmitError('Impossible de créer la réservation. Veuillez réessayer.');
@@ -252,129 +265,175 @@ export function BookingScreen({ route, navigation }: Props) {
 
   if (submitSuccess) {
     return (
-      <View style={styles.centered}>
-        <View style={styles.successIcon}>
-          <Text style={styles.successIconText}>✓</Text>
+      <ImageBackground
+        source={require('../../../assets/images/login.jpg')}
+        resizeMode="cover"
+        style={styles.successBg}
+      >
+        <View style={styles.successOverlay}>
+          <Image source={CHECK_ICON} style={styles.successCheckIcon} />
+          <Text style={styles.successTitle}>Réservation confirmée !</Text>
+          <View style={styles.successCard}>
+            <Text style={styles.successDate}>
+              {confirmedDate
+                ? (() => {
+                    const d = new Date(confirmedDate).toLocaleDateString('fr-FR', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    });
+                    return d.charAt(0).toUpperCase() + d.slice(1);
+                  })()
+                : ''}
+            </Text>
+            <Text style={styles.successTime}>{confirmedSlot ?? ''}</Text>
+            <Text style={styles.successGarage}>{garageName}</Text>
+          </View>
+          <Pressable
+            onPress={() => navigation.getParent()?.navigate('Bookings')}
+            style={styles.successBackButton}
+          >
+            <Text style={styles.successBackButtonText}>Voir mes réservations</Text>
+          </Pressable>
         </View>
-        <Text style={styles.successTitle}>Réservation confirmée !</Text>
-        <Text style={styles.successText}>
-          Votre rendez-vous chez {garageName} a bien été enregistré.
-        </Text>
-        <Pressable onPress={() => navigation.popToTop()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>Retour à l'accueil</Text>
-        </Pressable>
-      </View>
+      </ImageBackground>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Garage header */}
-      <Image
-        source={{ uri: garageImageUrl ?? PLACEHOLDER_IMAGE }}
-        style={styles.image}
-      />
-      <Text style={styles.garageName}>{garageName}</Text>
-      <Text style={styles.garageCity}>{garageCity}</Text>
-      <Text style={styles.garageAddress}>{garageAddress}</Text>
+    <View style={styles.screen}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
-      {/* Vehicle selection */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Votre véhicule</Text>
-        {vehiclesLoading ? (
-          <ActivityIndicator color="#2563eb" style={styles.loader} />
-        ) : vehicles.length === 0 ? (
-          <Text style={styles.emptyLabel}>Aucun véhicule enregistré.</Text>
-        ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalList}
-          >
-            {vehicles.map((vehicle) => {
-              const selected = selectedVehicleId === vehicle.id;
-              return (
-                <Pressable
-                  key={vehicle.id}
-                  onPress={() => setSelectedVehicleId(vehicle.id)}
-                  style={[styles.vehicleCard, selected && styles.cardSelected]}
-                >
-                  <Text style={[styles.vehicleModel, selected && styles.selectedText]}>
-                    {vehicle.brand} {vehicle.model}
-                  </Text>
-                  <Text style={[styles.vehicleSub, selected && styles.selectedSubText]}>
-                    {vehicle.year} · {vehicle.engine}
-                  </Text>
-                  {vehicle.license_plate ? (
-                    <Text style={[styles.vehiclePlate, selected && styles.selectedSubText]}>
-                      {vehicle.license_plate}
-                    </Text>
-                  ) : null}
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        )}
-      </View>
+        <Image
+          source={require('../../../assets/images/logo-mecanoo.png')}
+          style={styles.headerLogo}
+        />
 
-      {/* Service selection */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Prestations</Text>
-        {categorizedServices.length === 0 ? (
-          <Text style={styles.emptyLabel}>Aucune prestation disponible.</Text>
-        ) : (
-          categorizedServices.map((cat) => (
-            <View key={cat.category} style={styles.categoryBlock}>
-              <Text style={styles.categoryTitle}>{cat.category}</Text>
-              {cat.items.map((service, index) => {
-                const key = `${cat.category}::${index}`;
-                const checked = selectedServiceKeys.has(key);
+        {/* ── EN-TÊTE GARAGE (style blueHeader de GarageDetailsScreen) ── */}
+        <View style={styles.blueHeader}>
+          <Image
+            source={{ uri: garageImageUrl ?? PLACEHOLDER_IMAGE }}
+            style={styles.garageImage}
+          />
+          <View style={styles.blueHeaderContent}>
+            <Text style={styles.cardTitle}>{garageName}</Text>
+            <View style={styles.cardInfoRow}>
+              <Image source={ADDRESS_ICON} style={styles.cardRowIcon} />
+              <Text style={styles.cardAddress}>
+                {garageAddress}{garageCity ? `, ${garageCity}` : ''}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* ── SÉLECTIONNE TON VÉHICULE (grille 2 colonnes, style encarts Profil) ── */}
+        <Text style={styles.sectionTitle}>Sélectionne ton véhicule</Text>
+        <View style={styles.vehicleSection}>
+          {vehiclesLoading ? (
+            <ActivityIndicator color="#1a3fa6" style={styles.loader} />
+          ) : vehicles.length === 0 ? (
+            <Text style={styles.emptyLabel}>Aucun véhicule enregistré.</Text>
+          ) : (
+            <View style={styles.vehicleGrid}>
+              {vehicles.map((vehicle) => {
+                const selected = selectedVehicleId === vehicle.id;
                 return (
                   <Pressable
-                    key={key}
-                    onPress={() => toggleService(key)}
-                    style={[styles.serviceRow, checked && styles.serviceRowSelected]}
+                    key={vehicle.id}
+                    onPress={() => setSelectedVehicleId(vehicle.id)}
+                    style={[styles.vehicleCard, selected && styles.vehicleCardSelected]}
                   >
-                    <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
-                      {checked ? <Text style={styles.checkmark}>✓</Text> : null}
+                    <View style={styles.vehicleCheckRow}>
+                      <View style={[styles.checkbox, selected && styles.checkboxCheckedOnDark]}>
+                        {selected ? <Image source={CHECK_ICON} style={styles.checkIcon} /> : null}
+                      </View>
                     </View>
-                    <Text
-                      style={[styles.serviceName, checked && styles.serviceNameSelected]}
-                      numberOfLines={2}
-                    >
-                      {service.serviceName}
+                    <Text style={[styles.vehicleModel, selected && styles.vehicleModelSelected]}>
+                      {vehicle.brand} {vehicle.model}
                     </Text>
-                    <Text style={[styles.servicePrice, checked && styles.servicePriceSelected]}>
-                      {service.price} €
-                    </Text>
+                    {vehicle.license_plate ? (
+                      <Text style={[styles.vehiclePlate, selected && styles.vehiclePlateSelected]}>
+                        {vehicle.license_plate.toUpperCase()}
+                      </Text>
+                    ) : null}
                   </Pressable>
                 );
               })}
             </View>
+          )}
+        </View>
+
+        {/* ── PRESTATIONS (style GarageDetailsScreen + cases à cocher) ── */}
+        <Text style={styles.sectionTitle}>Sélectionne tes prestations</Text>
+        {categorizedServices.length === 0 ? (
+          <View style={styles.categoryCard}>
+            <Text style={styles.emptyLabel}>Aucune prestation disponible.</Text>
+          </View>
+        ) : (
+          categorizedServices.map((cat) => (
+            <View key={cat.category} style={styles.categoryCard}>
+              <Text style={styles.categoryTitle}>{cat.category}</Text>
+              {cat.items.length === 0 ? (
+                <Text style={styles.emptyLabel}>Aucune prestation dans cette catégorie.</Text>
+              ) : (
+                Array.from({ length: Math.ceil(cat.items.length / 2) }, (_, rowIndex) => {
+                  const pair = cat.items.slice(rowIndex * 2, rowIndex * 2 + 2);
+                  return (
+                    <View key={`${cat.category}-row-${rowIndex}`} style={styles.serviceGrid}>
+                      {pair.map((service, pairIdx) => {
+                        const itemIndex = rowIndex * 2 + pairIdx;
+                        const key = `${cat.category}::${itemIndex}`;
+                        const checked = selectedServiceKeys.has(key);
+                        return (
+                          <Pressable
+                            key={pairIdx}
+                            onPress={() => toggleService(key)}
+                            style={[styles.serviceItem, checked && styles.serviceItemChecked]}
+                          >
+                            <View style={styles.serviceItemTop}>
+                              <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
+                                {checked ? <Image source={CHECK_ICON} style={styles.checkIcon} /> : null}
+                              </View>
+                            </View>
+                            <View style={styles.serviceItemBottom}>
+                              <Text style={[styles.serviceName, checked && styles.serviceNameChecked]}>{service.serviceName}</Text>
+                              <Text style={[styles.servicePrice, checked && styles.servicePriceChecked]}>{service.price} €</Text>
+                            </View>
+                          </Pressable>
+                        );
+                      })}
+                      {pair.length === 1 && (
+                        <View style={[styles.serviceItem, { backgroundColor: 'transparent' }]} />
+                      )}
+                    </View>
+                  );
+                })
+              )}
+            </View>
           ))
         )}
+
         {selectedServiceKeys.size > 0 && (
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total estimé</Text>
+          <View style={styles.totalCard}>
+            <Text style={styles.totalLabel}>TOTAL</Text>
             <Text style={styles.totalPrice}>{totalPrice} €</Text>
           </View>
         )}
-      </View>
 
-      {/* Date selection */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Choisir une date</Text>
+        {/* ── CHOISIR UNE DATE ── */}
+        <Text style={styles.sectionTitle}>Sélectionne ta date</Text>
         {availableDates.length === 0 ? (
-          <Text style={styles.emptyLabel}>
-            Aucune disponibilité dans les 2 prochains mois.
-          </Text>
+          <View style={styles.categoryCard}>
+            <Text style={styles.emptyLabel}>Aucune disponibilité dans les 2 prochains mois.</Text>
+          </View>
         ) : (
           datesByMonth.map((monthGroup) => {
             const isExpanded = expandedMonths.has(monthGroup.key);
             return (
-              <View key={monthGroup.key} style={styles.monthGroup}>
+              <View key={monthGroup.key} style={styles.categoryCard}>
                 <Pressable
-                  style={styles.monthHeader}
+                  style={styles.categoryHeader}
                   onPress={() => {
                     setExpandedMonths((prev) => {
                       const next = new Set(prev);
@@ -384,15 +443,14 @@ export function BookingScreen({ route, navigation }: Props) {
                     });
                   }}
                 >
-                  <Text style={styles.monthHeaderText}>{monthGroup.label}</Text>
-                  <Text style={styles.monthHeaderChevron}>{isExpanded ? '▲' : '▼'}</Text>
+                  <Text style={styles.categoryTitle}>{monthGroup.label}</Text>
+                  <Image
+                    source={CHEVRON_ICON}
+                    style={[styles.chevronIcon, isExpanded && styles.chevronUp]}
+                  />
                 </Pressable>
-                {isExpanded ? (
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.horizontalList}
-                  >
+                {isExpanded && (
+                  <View style={styles.datesGrid}>
                     {monthGroup.dates.map((date) => {
                       const dateStr = formatDate(date);
                       const selected = selectedDate === dateStr;
@@ -400,7 +458,7 @@ export function BookingScreen({ route, navigation }: Props) {
                         <Pressable
                           key={dateStr}
                           onPress={() => setSelectedDate(dateStr)}
-                          style={[styles.dateCard, selected && styles.cardSelected]}
+                          style={[styles.dateCard, selected && styles.dateCardSelected]}
                         >
                           <Text style={[styles.dateWeekday, selected && styles.selectedSubText]}>
                             {WEEKDAY_SHORT[date.getDay()]}
@@ -408,343 +466,394 @@ export function BookingScreen({ route, navigation }: Props) {
                           <Text style={[styles.dateDay, selected && styles.selectedText]}>
                             {date.getDate()}
                           </Text>
-                          <Text style={[styles.dateMonth, selected && styles.selectedSubText]}>
-                            {MONTH_SHORT[date.getMonth()]}
-                          </Text>
                         </Pressable>
                       );
                     })}
-                  </ScrollView>
-                ) : null}
+                  </View>
+                )}
               </View>
             );
           })
         )}
-      </View>
 
-      {/* Time slot selection */}
-      {selectedDate ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Choisir un créneau</Text>
-          {slotsLoading ? (
-            <ActivityIndicator color="#2563eb" style={styles.loader} />
-          ) : availableSlots.length === 0 ? (
-            <Text style={styles.emptyLabel}>
-              Aucun créneau disponible pour cette date.
-            </Text>
-          ) : (
-            <View style={styles.slotsGrid}>
-              {availableSlots.map((slot) => {
-                const selected = selectedSlot === slot.startTime;
-                return (
-                  <Pressable
-                    key={slot.startTime}
-                    onPress={() => setSelectedSlot(slot.startTime)}
-                    style={[styles.slotButton, selected && styles.slotButtonSelected]}
-                  >
-                    <Text style={[styles.slotText, selected && styles.selectedText]}>
-                      {slot.startTime}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+        {/* ── CHOISIR UN CRÉNEAU ── */}
+        {selectedDate ? (
+          <>
+            <Text style={styles.sectionTitle}>Sélectionne ton créneau</Text>
+            <View style={styles.section}>
+              {slotsLoading ? (
+                <ActivityIndicator color="#1a3fa6" style={styles.loader} />
+              ) : availableSlots.length === 0 ? (
+                <Text style={styles.emptyLabel}>
+                  Aucun créneau disponible pour cette date.
+                </Text>
+              ) : (
+                <View style={styles.slotsGrid}>
+                  {availableSlots.map((slot) => {
+                    const selected = selectedSlot === slot.startTime;
+                    return (
+                      <Pressable
+                        key={slot.startTime}
+                        onPress={() => setSelectedSlot(slot.startTime)}
+                        style={[styles.slotButton, selected && styles.slotButtonSelected]}
+                      >
+                        <Text style={[styles.slotText, selected && styles.selectedText]}>
+                          {slot.startTime}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
             </View>
+          </>
+        ) : null}
+
+
+        {/* ── ERREUR ── */}
+        {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
+
+        {/* ── BOUTON CONFIRMER ── */}
+        <Pressable
+          onPress={handleConfirm}
+          disabled={!canConfirm}
+          style={[styles.confirmButton, !canConfirm && styles.confirmButtonDisabled]}
+        >
+          {submitting ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.confirmButtonText}>Confirmer la réservation</Text>
           )}
-        </View>
-      ) : null}
+        </Pressable>
 
-      {/* Recap */}
-      {canConfirm && selectedVehicleId !== null && selectedDate !== null && selectedSlot !== null ? (
-        <View style={styles.recapSection}>
-          <Text style={styles.recapTitle}>Récapitulatif</Text>
-          <Text style={styles.recapLine}>
-            {vehicles.find((v) => v.id === selectedVehicleId)?.brand}{' '}
-            {vehicles.find((v) => v.id === selectedVehicleId)?.model}
-          </Text>
-          <Text style={styles.recapLine}>
-            {selectedServiceNames.join(', ')}
-          </Text>
-          <Text style={styles.recapLine}>
-            {selectedDate} à {selectedSlot}
-          </Text>
-          <Text style={styles.recapTotal}>{totalPrice} €</Text>
-        </View>
-      ) : null}
-
-      {/* Error */}
-      {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
-
-      {/* Confirm button */}
-      <Pressable
-        onPress={handleConfirm}
-        disabled={!canConfirm}
-        style={[styles.confirmButton, !canConfirm && styles.confirmButtonDisabled]}
-      >
-        {submitting ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.confirmButtonText}>Confirmer la réservation</Text>
-        )}
-      </Pressable>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
+const cardShadow = {
+  shadowColor: '#000',
+  shadowOpacity: 0.025,
+  shadowRadius: 22,
+  shadowOffset: { width: 0, height: 5 },
+  elevation: 2,
+} as const;
+
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: '#f1f5f9',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#f1f5f9',
   },
   content: {
-    padding: 16,
     gap: 12,
     paddingBottom: 32,
-  },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f8fafc',
-    padding: 32,
-    gap: 12,
-  },
-
-  // Garage header
-  image: {
-    width: '100%',
-    height: 180,
-    borderRadius: 14,
-  },
-  garageName: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#0f172a',
-  },
-  garageCity: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#334155',
-  },
-  garageAddress: {
-    fontSize: 13,
-    color: '#475569',
-  },
-
-  // Sections
-  section: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    padding: 12,
-    gap: 10,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0f172a',
-  },
-  emptyLabel: {
-    color: '#64748b',
-    fontStyle: 'italic',
-    fontSize: 13,
+    paddingTop: 0,
   },
   loader: {
     marginVertical: 8,
   },
 
-  // Horizontal scroll
-  horizontalList: {
-    gap: 10,
-    paddingVertical: 2,
+  headerLogo: {
+    width: 55,
+    height: 28,
+    resizeMode: 'contain',
+    alignSelf: 'center',
+    marginTop: 52,
+    marginBottom: 4,
   },
 
-  // Shared selected states
-  cardSelected: {
-    backgroundColor: '#1d4ed8',
-    borderColor: '#1d4ed8',
+  /* ── EN-TÊTE GARAGE ── */
+  blueHeader: {
+    backgroundColor: '#dbeafe',
+    marginHorizontal: 16,
+    paddingBottom: 16,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  garageImage: {
+    width: '100%',
+    height: 220,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  blueHeaderContent: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    gap: 6,
+  },
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1a3fa6',
+  },
+  cardInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  cardRowIcon: {
+    width: 13,
+    height: 13,
+  },
+  cardAddress: {
+    fontSize: 13,
+    color: '#94a3b8',
+    flexShrink: 1,
+  },
+
+  /* ── TITRES DE SECTION ── */
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0f172a',
+    paddingHorizontal: 16,
+    marginTop: 4,
+  },
+
+  /* ── CARD générique (empty state véhicule) ── */
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    marginHorizontal: 16,
+    padding: 14,
+    gap: 6,
+    ...cardShadow,
+  },
+
+  /* ── BLOC BLANC VÉHICULE ── */
+  vehicleSection: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    marginHorizontal: 16,
+    padding: 12,
+    ...cardShadow,
+  },
+  vehicleGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  /* style encart vehicleTag de AccountScreen, agrandi en 2 colonnes */
+  vehicleCard: {
+    backgroundColor: '#f1f5f9',
+    borderRadius: 10,
+    padding: 12,
+    gap: 4,
+    width: '48%',
+  },
+  vehicleCardSelected: {
+    backgroundColor: '#1a3fa6',
+  },
+  vehicleCheckRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  checkboxCheckedOnDark: {
+    backgroundColor: 'transparent',
+    borderColor: '#fff',
+  },
+  vehicleModel: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1a3fa6',
+  },
+  vehicleModelSelected: {
+    color: '#fff',
+  },
+  vehiclePlate: {
+    fontSize: 11,
+    color: '#94a3b8',
+    fontWeight: '600',
+  },
+  vehiclePlateSelected: {
+    color: '#fff',
+  },
+
+  /* ── PRESTATIONS (style GarageDetailsScreen + checkboxes) ── */
+  categoryCard: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    marginHorizontal: 16,
+    padding: 14,
+    gap: 10,
+    ...cardShadow,
+  },
+  categoryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  categoryTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1a3fa6',
+    textTransform: 'capitalize',
+  },
+  serviceGrid: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  serviceItem: {
+    flex: 1,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 4,
+  },
+  serviceItemChecked: {
+    backgroundColor: '#1a3fa6',
+  },
+  serviceItemTop: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  serviceItemBottom: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  checkbox: {
+    width: 18,
+    height: 18,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: '#94a3b8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: 'transparent',
+    borderColor: 'transparent',
+  },
+  checkIcon: {
+    width: 18,
+    height: 18,
+    resizeMode: 'contain',
+  },
+  serviceName: {
+    color: '#1e293b',
+    fontSize: 13,
+    flex: 1,
+  },
+  serviceNameChecked: {
+    color: '#fff',
+  },
+  servicePrice: {
+    color: '#1a3fa6',
+    fontWeight: '700',
+    fontSize: 16,
+    flexShrink: 0,
+  },
+  servicePriceChecked: {
+    color: '#fff',
+  },
+  emptyLabel: {
+    color: '#94a3b8',
+    fontStyle: 'italic',
+  },
+
+  /* ── TOTAL ── */
+  totalCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#1a3fa6',
+    borderRadius: 14,
+    marginHorizontal: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    ...cardShadow,
+  },
+  totalLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  totalPrice: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#fff',
+  },
+
+  /* ── CRÉNEAUX ── */
+  section: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    marginHorizontal: 16,
+    gap: 8,
+    ...cardShadow,
   },
   selectedText: {
     color: '#fff',
   },
   selectedSubText: {
-    color: '#bfdbfe',
+    color: '#dbeafe',
   },
-
-  // Vehicle cards
-  vehicleCard: {
-    borderWidth: 1.5,
-    borderColor: '#e2e8f0',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    gap: 3,
-    minWidth: 140,
+  /* chevrons partagés avec les mois */
+  chevronIcon: {
+    width: 14,
+    height: 14,
+    tintColor: '#94a3b8',
+    marginLeft: 4,
+    transform: [{ rotate: '90deg' }],
   },
-  vehicleModel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#0f172a',
+  chevronUp: {
+    transform: [{ rotate: '270deg' }],
   },
-  vehicleSub: {
-    fontSize: 12,
-    color: '#475569',
-  },
-  vehiclePlate: {
-    fontSize: 11,
-    color: '#64748b',
-    marginTop: 2,
-  },
-
-  // Service rows
-  categoryBlock: {
+  /* grille de dates */
+  datesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 6,
   },
-  categoryTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1e293b',
-    textTransform: 'capitalize',
-    marginBottom: 2,
-  },
-  serviceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    borderRadius: 8,
-    backgroundColor: '#f1f5f9',
-    paddingHorizontal: 10,
-    paddingVertical: 9,
-  },
-  serviceRowSelected: {
-    backgroundColor: '#eff6ff',
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 5,
-    borderWidth: 1.5,
-    borderColor: '#94a3b8',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  checkboxChecked: {
-    backgroundColor: '#1d4ed8',
-    borderColor: '#1d4ed8',
-  },
-  checkmark: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  serviceName: {
-    flex: 1,
-    fontSize: 13,
-    color: '#1e293b',
-  },
-  serviceNameSelected: {
-    color: '#1e3a8a',
-    fontWeight: '600',
-  },
-  servicePrice: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#475569',
-    flexShrink: 0,
-  },
-  servicePriceSelected: {
-    color: '#1d4ed8',
-  },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
-    paddingTop: 10,
-    marginTop: 2,
-  },
-  totalLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#0f172a',
-  },
-  totalPrice: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#1d4ed8',
-  },
-
-  // Month accordion
-  monthGroup: {
-    gap: 8,
-  },
-  monthHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#f1f5f9',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  monthHeaderText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1e293b',
-    textTransform: 'capitalize',
-  },
-  monthHeaderChevron: {
-    fontSize: 10,
-    color: '#64748b',
-  },
-
-  // Date cards
   dateCard: {
-    borderWidth: 1.5,
-    borderColor: '#e2e8f0',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 5,
     alignItems: 'center',
-    gap: 2,
-    minWidth: 56,
+    gap: 1,
+    minWidth: 38,
+  },
+  dateCardSelected: {
+    backgroundColor: '#1a3fa6',
   },
   dateWeekday: {
-    fontSize: 11,
-    color: '#64748b',
+    fontSize: 9,
+    color: '#94a3b8',
     fontWeight: '600',
+    textTransform: 'uppercase',
   },
   dateDay: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#0f172a',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#334155',
   },
-  dateMonth: {
-    fontSize: 11,
-    color: '#64748b',
-  },
-
-  // Slot grid
   slotsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
   slotButton: {
-    borderWidth: 1.5,
-    borderColor: '#e2e8f0',
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 9,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#f1f5f9',
   },
   slotButtonSelected: {
-    backgroundColor: '#1d4ed8',
-    borderColor: '#1d4ed8',
+    backgroundColor: '#1a3fa6',
+    borderColor: '#1a3fa6',
   },
   slotText: {
     fontSize: 13,
@@ -752,43 +861,46 @@ const styles = StyleSheet.create({
     color: '#334155',
   },
 
-  // Recap
+  /* ── RÉCAPITULATIF ── */
   recapSection: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#dbeafe',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#bfdbfe',
+    borderColor: '#1a3fa6',
     padding: 14,
+    marginHorizontal: 16,
     gap: 4,
   },
   recapTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#1e3a8a',
+    color: '#1a3fa6',
     marginBottom: 4,
   },
   recapLine: {
     fontSize: 13,
-    color: '#1e40af',
+    color: '#1a3fa6',
   },
   recapTotal: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#1d4ed8',
+    color: '#1a3fa6',
     marginTop: 6,
   },
 
-  // Error
+  /* ── ERREUR ── */
   errorText: {
     color: '#b91c1c',
     fontSize: 13,
     textAlign: 'center',
+    paddingHorizontal: 16,
   },
 
-  // Confirm button
+  /* ── BOUTON CONFIRMER ── */
   confirmButton: {
+    marginHorizontal: 16,
     marginTop: 4,
-    backgroundColor: '#1d4ed8',
+    backgroundColor: '#1a3fa6',
     borderRadius: 12,
     paddingVertical: 15,
     alignItems: 'center',
@@ -802,42 +914,73 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
 
-  // Success screen
-  successIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#16a34a',
+  /* ── ÉCRAN SUCCÈS ── */
+  successBg: {
+    flex: 1,
+  },
+  successOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(179, 229, 255, 0.80)',
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 32,
+    gap: 14,
+  },
+  successCheckIcon: {
+    width: 72,
+    height: 72,
+    resizeMode: 'contain',
     marginBottom: 8,
   },
-  successIconText: {
-    color: '#fff',
-    fontSize: 28,
-    fontWeight: '700',
-  },
   successTitle: {
-    fontSize: 22,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
+    textAlign: 'center',
+  },
+  successCard: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    gap: 4,
+    alignItems: 'center',
+    width: '100%',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  successDate: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1a3fa6',
+    textAlign: 'center',
+    textTransform: 'capitalize',
+  },
+  successTime: {
+    fontSize: 32,
     fontWeight: '800',
-    color: '#0f172a',
+    color: '#1a3fa6',
     textAlign: 'center',
   },
-  successText: {
-    fontSize: 14,
-    color: '#475569',
+  successGarage: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#94a3b8',
     textAlign: 'center',
-    lineHeight: 22,
+    marginTop: 2,
   },
-  backButton: {
+  successBackButton: {
     marginTop: 16,
-    backgroundColor: '#1d4ed8',
+    backgroundColor: '#1a3fa6',
     borderRadius: 12,
     paddingVertical: 13,
     paddingHorizontal: 32,
     alignItems: 'center',
   },
-  backButtonText: {
+  successBackButtonText: {
     color: '#fff',
     fontWeight: '700',
     fontSize: 14,
