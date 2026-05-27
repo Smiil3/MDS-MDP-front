@@ -25,9 +25,9 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - |
-              cat > /usr/share/nginx/html/env.js <<EOF
-              window.__ENV__ = {
-                EXPO_PUBLIC_API_URL: "${EXPO_PUBLIC_API_URL}"
-              };
-              EOF
+               cat > /usr/share/nginx/html/env.js <<EOF
+               window.__ENV__ = {
+                 EXPO_PUBLIC_API_BASE_URL: "${EXPO_PUBLIC_API_BASE_URL}"
+               };
+               EOF
               nginx -g 'daemon off;'
