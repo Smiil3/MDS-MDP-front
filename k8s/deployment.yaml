@@ -19,3 +19,15 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 80
+          envFrom:
+            - secretRef:
+                name: frontend-app-secrets
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              cat > /usr/share/nginx/html/env.js <<EOF
+              window.__ENV__ = {
+                EXPO_PUBLIC_API_URL: "${EXPO_PUBLIC_API_URL}"
+              };
+              EOF
+              nginx -g 'daemon off;'
