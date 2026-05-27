@@ -30,4 +30,4 @@ spec:
                  EXPO_PUBLIC_API_BASE_URL: "${EXPO_PUBLIC_API_BASE_URL}"
                };
                EOF
-              nginx -g 'daemon off;'
+               nginx -g 'daemon off;'
