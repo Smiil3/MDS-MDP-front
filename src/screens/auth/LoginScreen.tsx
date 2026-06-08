@@ -5,6 +5,7 @@ import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-nativ
 import { useAuth } from '../../context/auth/AuthContext';
 import { AuthRole } from '../../types/auth';
 import { AuthStackParamList } from '../../types/navigation';
+import { ApiError } from '../../services/api/httpClient';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
@@ -23,15 +24,15 @@ export function LoginScreen({ navigation, route }: Props) {
 
   const validationError = useMemo(() => {
     if (!email.trim() || !password.trim()) {
-      return 'Email and password are required.';
+      return 'Email et mot de passe obligatoires.';
     }
 
     if (!email.includes('@')) {
-      return 'Please enter a valid email.';
+      return 'Veuillez entrer unemail valide.';
     }
 
     if (password.length < 6) {
-      return 'Password must contain at least 6 characters.';
+      return 'Le mot de passe doit contenir au moins 6 caractères.';
     }
 
     return null;
@@ -48,7 +49,11 @@ export function LoginScreen({ navigation, route }: Props) {
       setIsSubmitting(true);
       await login(role, email.trim(), password);
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : 'Login failed.');
+      if (submitError instanceof ApiError && submitError.status === 401) {
+        setError('Email ou mot de passe incorrect.');
+      } else {
+        setError(submitError instanceof Error ? submitError.message : 'Connexion échouée.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -79,7 +84,7 @@ export function LoginScreen({ navigation, route }: Props) {
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
       <Pressable onPress={onSubmit} disabled={isSubmitting} style={styles.submitButton}>
-        <Text style={styles.submitText}>{isSubmitting ? 'Signing in...' : 'Sign in'}</Text>
+        <Text style={styles.submitText}>{isSubmitting ? 'Chargement...' : 'Se connecter'}</Text>
       </Pressable>
 
       <Pressable onPress={() => navigation.navigate('RegisterAccountType')}>

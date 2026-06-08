@@ -11,6 +11,13 @@ class ApiError extends Error {
   }
 }
 
+const AUTH_PATHS = [API_REFRESH_PATH, 
+  '/api/auth/drivers/login', 
+  '/api/auth/mechanics/login',
+  '/api/auth/drivers/register',
+  '/api/auth/mechanics/register'
+];
+
 type AuthHandlers = {
   getAccessToken: () => string | null;
   getRefreshToken: () => string | null;
@@ -87,14 +94,14 @@ export async function apiRequest<T>(
     headers,
   });
 
-  if (response.status === 401 && retryOnUnauthorized && path !== API_REFRESH_PATH) {
+  if (response.status === 401 && retryOnUnauthorized && !AUTH_PATHS.includes(path)) {
     const refreshed = await refreshAccessToken();
     if (refreshed) {
       return apiRequest<T>(path, init, false);
     }
 
     await authHandlers?.onAuthFailure();
-    throw new ApiError('Session expired. Please log in again.', 401);
+    throw new ApiError('Session expiré, veuillez vous reconnecter.', 401);
   }
 
   return parseResponse<T>(response);
