@@ -384,7 +384,7 @@ export function RegisterDriverReviewScreen({ navigation }: ReviewProps) {
         {error ? <Text style={authSharedStyles.errorText}>{error}</Text> : null}
         <Pressable onPress={onSubmit} disabled={isSubmitting} style={authSharedStyles.primaryButton}>
           <Text style={authSharedStyles.primaryButtonText}>
-            {isSubmitting ? 'Création...' : 'Créer mon compte'}
+            {isSubmitting ? 'Chargement...' : 'Créer mon compte'}
           </Text>
         </Pressable>
       </WizardScreenLayout>

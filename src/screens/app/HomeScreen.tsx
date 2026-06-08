@@ -183,7 +183,7 @@ export function HomeScreen({ navigation }: Props) {
 
       {locationDenied ? (
         <Text style={styles.infoText}>
-          Localisation refusée: vue carte indisponible, affichage en cards par défaut.
+          Localisation refusée: vue carte indisponible, affichage en liste par défaut.
         </Text>
       ) : null}
 
@@ -246,7 +246,7 @@ export function HomeScreen({ navigation }: Props) {
           style={[styles.modeButton, viewMode === 'cards' ? styles.modeButtonActive : null]}
         >
           <Text style={[styles.modeButtonText, viewMode === 'cards' ? styles.modeButtonTextActive : null]}>
-            Cards
+            Liste
           </Text>
         </Pressable>
         <Pressable
@@ -259,7 +259,7 @@ export function HomeScreen({ navigation }: Props) {
           ]}
         >
           <Text style={[styles.modeButtonText, viewMode === 'map' ? styles.modeButtonTextActive : null]}>
-            Map
+            Carte
           </Text>
         </Pressable>
       </View>

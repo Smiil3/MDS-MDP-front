@@ -762,7 +762,6 @@ export function RegisterGarageReviewScreen({ navigation }: ReviewProps) {
     >
       <View style={styles.reviewCard}>
 
-        {/* Informations générales */}
         <Text style={styles.reviewSectionTitle}>Informations</Text>
         <View style={styles.reviewTagsGrid}>
           <View style={styles.reviewTag}>
@@ -789,7 +788,6 @@ export function RegisterGarageReviewScreen({ navigation }: ReviewProps) {
 
         <View style={styles.reviewDivider} />
 
-        {/* Services */}
         <Text style={styles.reviewSectionTitle}>Services</Text>
         {servicesPayload.map((categoryBlock) =>
           Object.entries(categoryBlock).map(([category, services]) => (
@@ -809,7 +807,6 @@ export function RegisterGarageReviewScreen({ navigation }: ReviewProps) {
 
         <View style={styles.reviewDivider} />
 
-        {/* Horaires */}
         <Text style={styles.reviewSectionTitle}>Horaires</Text>
         <View style={styles.reviewTagsGrid}>
           {dayKeys.map((day) => {
@@ -832,7 +829,7 @@ export function RegisterGarageReviewScreen({ navigation }: ReviewProps) {
       {error ? <Text style={authSharedStyles.errorText}>{error}</Text> : null}
       <Pressable onPress={onSubmit} disabled={isSubmitting} style={authSharedStyles.primaryButton}>
         <Text style={authSharedStyles.primaryButtonText}>
-          {isSubmitting ? 'Création...' : 'Créer mon compte garage'}
+          {isSubmitting ? 'Chargement...' : 'Créer mon garage'}
         </Text>
       </Pressable>
     </WizardScreenLayout>
