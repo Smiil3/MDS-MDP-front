@@ -7,7 +7,7 @@ export type AuthStackParamList = {
   LoginRoleSelect: undefined;
   Login: { role: AuthRole };
   RegisterAccountType: undefined;
-  RegisterDriverEmail: undefined;
+  RegisterDriverEmail: { errorMessage?: string } | undefined;
   RegisterDriverPassword: undefined;
   RegisterDriverIdentity: undefined;
   RegisterDriverPhone: undefined;

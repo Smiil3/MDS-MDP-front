@@ -8,6 +8,7 @@ import { useAuthOnboarding } from '../../context/auth/AuthOnboardingContext';
 import { DriverRegisterPayload } from '../../types/auth';
 import { AuthStackParamList } from '../../types/navigation';
 import { authSharedStyles, LabeledInput, WizardScreenLayout } from './onboarding/common';
+import { ApiError } from '../../services/api/httpClient';
 
 const toIsoBirthDate = (value: string) => `${value}T00:00:00.000Z`;
 
@@ -46,9 +47,9 @@ function useDriverValidation() {
 
 type EmailProps = NativeStackScreenProps<AuthStackParamList, 'RegisterDriverEmail'>;
 
-export function RegisterDriverEmailScreen({ navigation }: EmailProps) {
+export function RegisterDriverEmailScreen({ navigation, route }: EmailProps) {
   const { driver, setDriver } = useAuthOnboarding();
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(route.params?.errorMessage ?? null);
   const { emailError } = useDriverValidation();
 
   const onNext = () => {
@@ -341,6 +342,13 @@ export function RegisterDriverReviewScreen({ navigation }: ReviewProps) {
       setSelectedAccountType(null);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Inscription impossible.');
+
+      if (submitError instanceof ApiError && submitError.status === 409) {
+        navigation.navigate('RegisterDriverEmail', { errorMessage: 'Un compte existe déjà avec ce mail.' });
+      } else {
+        setError(submitError instanceof Error ? submitError.message : 'Inscription impossible.');
+      }
+
     } finally {
       setIsSubmitting(false);
     }
