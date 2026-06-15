@@ -227,6 +227,12 @@ export function RegisterDriverPhoneScreen({ navigation }: PhoneProps) {
 
 type BirthProps = NativeStackScreenProps<AuthStackParamList, 'RegisterDriverBirthDate'>;
 
+const fromFrenchDate = (value: string): string => {
+  const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return value;
+  return `${match[3]}-${match[2]}-${match[1]}`;
+};
+
 export function RegisterDriverBirthDateScreen({ navigation }: BirthProps) {
   const { driver, setDriver } = useAuthOnboarding();
   const [error, setError] = useState<string | null>(null);
@@ -265,15 +271,31 @@ export function RegisterDriverBirthDateScreen({ navigation }: BirthProps) {
       onGoBack={() => navigation.goBack()}
     >
       {Platform.OS === 'web' ? (
-        <LabeledInput
-          label="Date de naissance (YYYY-MM-DD)"
-          value={driver.birthDate}
-          onChangeText={(value) => {
-            setError(null);
-            setDriver({ birthDate: value });
-          }}
-          placeholder="1990-12-31"
-        />
+        <>
+          <Text style={{ color: '#fff', fontWeight: '600' }}>Date de naissance</Text>
+          <input
+            type="date"
+            max={new Date().toISOString().split('T')[0]}
+            value={driver.birthDate || ''}
+            onChange={(e) => {
+              setError(null);
+              setDriver({ birthDate: e.target.value });
+            }}
+            style={{
+              width: '100%',
+              borderRadius: 10,
+              paddingLeft: 14,
+              paddingRight: 14,
+              paddingTop: 12,
+              paddingBottom: 12,
+              backgroundColor: '#fff',
+              border: 'none',
+              fontSize: 14,
+              color: '#0f172a',
+              boxSizing: 'border-box',
+            }}
+          />
+        </>
       ) : (
         <>
           <Text style={{ color: '#fff', fontWeight: '600' }}>Date de naissance</Text>
