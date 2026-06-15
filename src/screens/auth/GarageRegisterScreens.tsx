@@ -108,11 +108,15 @@ function useGarageValidation() {
             ? 'Email invalide.'
             : !garage.password.trim()
               ? 'Mot de passe requis.'
-              : garage.password.length < 6
-                ? 'Minimum 6 caractères.'
-                : garage.password !== garage.passwordConfirmation
-                  ? 'Les mots de passe ne correspondent pas.'
-                  : null,
+              : garage.password.length < 8
+                ? 'Minimum 8 caractères.'
+                : !/[A-Z]/.test(garage.password)
+                  ? 'Le mot de passe doit contenir au moins une majuscule.'
+                  : !/[!@#$%^&*(),.?":{}|<>]/.test(garage.password)
+                    ? 'Le mot de passe doit contenir au moins un caractère spécial.'
+                    : garage.password !== garage.passwordConfirmation
+                      ? 'Les mots de passe ne correspondent pas.'
+                      : null,
     }),
     [garage],
   );
@@ -677,6 +681,7 @@ export function RegisterGarageCredentialsScreen({ navigation }: CredentialsProps
       />
       <LabeledInput
         label="Mot de passe"
+        hint="Minimum 8 caractères, une majuscule et un caractère spécial."
         value={garage.password}
         onChangeText={(value) => {
           setError(null);

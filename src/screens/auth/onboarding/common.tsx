@@ -41,12 +41,14 @@ export function WizardScreenLayout({
 
 type LabeledInputProps = {
   label: string;
+  hint?: string;
 } & ComponentProps<typeof TextInput>;
 
-export function LabeledInput({ label, style, ...props }: LabeledInputProps) {
+export function LabeledInput({ label, hint, style, ...props }: LabeledInputProps) {
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
+      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
       <TextInput {...props} style={[styles.input, style]} />
     </View>
   );
@@ -150,5 +152,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     backgroundColor: '#fff',
+  },
+  hint: {
+    fontSize: 12,
+    color: '#64748b',
+    fontStyle: 'italic',
+    marginTop: -2,
+    marginBottom: 2,
   },
 });
