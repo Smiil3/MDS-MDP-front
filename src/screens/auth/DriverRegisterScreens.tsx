@@ -26,11 +26,15 @@ function useDriverValidation() {
       passwordError:
         !driver.password.trim()
           ? 'Mot de passe requis.'
-          : driver.password.length < 6
-            ? 'Minimum 6 caractères.'
-            : driver.password !== driver.passwordConfirmation
-              ? 'Les mots de passe ne correspondent pas.'
-              : null,
+          : driver.password.length < 8
+            ? 'Minimum 8 caractères.'
+            : !/[A-Z]/.test(driver.password)
+              ? 'Le mot de passe doit contenir au moins une majuscule.'
+              : !/[!@#$%^&*(),.?":{}|<>]/.test(driver.password)
+                ? 'Le mot de passe doit contenir au moins un caractère spécial.'
+                : driver.password !== driver.passwordConfirmation
+                  ? 'Les mots de passe ne correspondent pas.'
+                  : null,
       identityError:
         !driver.firstName.trim() || !driver.lastName.trim()
           ? 'Prénom et nom sont requis.'
@@ -112,12 +116,13 @@ export function RegisterDriverPasswordScreen({ navigation }: PasswordProps) {
     >
       <LabeledInput
         label="Mot de passe"
+        hint="Minimum 8 caractères, une majuscule et un caractère spécial."
         value={driver.password}
         onChangeText={(value) => {
           setError(null);
           setDriver({ password: value });
         }}
-        placeholder="Au moins 6 caractères"
+        placeholder="Mot de passe"
         secureTextEntry
       />
       <LabeledInput
@@ -463,4 +468,9 @@ const driverReviewStyles = StyleSheet.create({
     fontWeight: '600',
     color: '#334155',
   },
+  hint: {
+    fontSize: 12,
+    color: '#64748b',
+    fontStyle: 'italic',
+  }
 });
