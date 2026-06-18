@@ -32,10 +32,10 @@ function formatAppointmentTime(isoDate: string): string {
 }
 
 const STATUS_TEXT_COLORS: Record<string, string> = {
-  'En attente': '#ca8a04',
-  'Confirmee':    '#19ba54',
-  'Annulee':    '#dc2626',
-  'Terminee':   '#045118',
+  'en attente': '#ca8a04',
+  'confirmee':    '#19ba54',
+  'annulee':    '#dc2626',
+  'terminee':   '#045118',
 };
 
 function statusColor(label: string): string {
