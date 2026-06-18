@@ -35,7 +35,7 @@ const STATUS_TEXT_COLORS: Record<string, string> = {
   'en attente': '#ca8a04',
   'confirmee':    '#19ba54',
   'annulee':    '#dc2626',
-  'terminee':   '#045118',
+  'terminee':   '#067423',
 };
 
 function statusColor(label: string): string {
@@ -153,14 +153,22 @@ export function MyBookingsScreen() {
                     <Text style={styles.cardAmount}>{item.total_amount} €</Text>
                   </View>
 
-                  <View style={styles.cardActions}>
-                    <Pressable style={styles.btnEdit}>
-                      <Text style={styles.btnEditText}>Modifier</Text>
-                    </Pressable>
-                    <Pressable style={styles.btnDelete}>
-                      <Text style={styles.btnDeleteText}>Supprimer</Text>
-                    </Pressable>
-                  </View>
+                  {item.booking_status.label.toLowerCase() === 'en attente' || item.booking_status.label.toLowerCase() === 'confirmee' ? (
+                    <View style={styles.cardActions}>
+                      <Pressable style={styles.btnEdit}>
+                        <Text style={styles.btnEditText}>Modifier</Text>
+                      </Pressable>
+                      <Pressable style={styles.btnDelete}>
+                        <Text style={styles.btnDeleteText}>Supprimer</Text>
+                      </Pressable>
+                    </View>
+                  ) : item.booking_status.label.toLowerCase() === 'terminee' ? (
+                    <View style={styles.cardActions}>
+                      <Pressable style={styles.btnEdit}>
+                        <Text style={styles.btnEditText}>Laisser un avis</Text>
+                      </Pressable>
+                    </View>
+                  ) : null}
                 </View>
               </View>
             );
