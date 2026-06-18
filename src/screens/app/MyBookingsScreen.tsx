@@ -32,10 +32,10 @@ function formatAppointmentTime(isoDate: string): string {
 }
 
 const STATUS_TEXT_COLORS: Record<string, string> = {
-  'en attente': '#ca8a04',
-  'validée':    '#16a34a',
-  'annulée':    '#dc2626',
-  'terminée':   '#64748b',
+  'En attente': '#ca8a04',
+  'Confirmee':    '#19ba54',
+  'Annulee':    '#dc2626',
+  'Terminee':   '#045118',
 };
 
 function statusColor(label: string): string {
@@ -99,7 +99,6 @@ export function MyBookingsScreen() {
             return (
               <View style={styles.card}>
                 <View style={styles.cardBody}>
-                  {/* Nom du garage + statut */}
                   <View style={styles.cardTitleRow}>
                     <Text style={styles.cardTitle}>{item.mechanic.name}</Text>
                     <Text style={[styles.statusText, { color: statusColor(item.booking_status.label) }]}>
@@ -107,7 +106,6 @@ export function MyBookingsScreen() {
                     </Text>
                   </View>
 
-                  {/* Adresse du garage */}
                   <View style={styles.cardInfoRow}>
                     {ADDRESS_ICON ? (
                       <Image source={ADDRESS_ICON} style={styles.cardRowIcon} />
@@ -125,7 +123,6 @@ export function MyBookingsScreen() {
                     </View>
                   ) : null}
 
-                  {/* Encart date/heure + véhicule */}
                   <View style={styles.appointmentBlock}>
                     <Text style={styles.appointmentDate}>
                       {formatAppointmentDate(item.appointment_date)}
@@ -140,7 +137,6 @@ export function MyBookingsScreen() {
                     </View>
                   </View>
 
-                  {/* Services + prix sur la même ligne */}
                   <View style={styles.servicesAmountRow}>
                     <View style={styles.cardServices}>
                       {item.booking_garage_service.map((bgs) => (
@@ -157,7 +153,6 @@ export function MyBookingsScreen() {
                     <Text style={styles.cardAmount}>{item.total_amount} €</Text>
                   </View>
 
-                  {/* Actions */}
                   <View style={styles.cardActions}>
                     <Pressable style={styles.btnEdit}>
                       <Text style={styles.btnEditText}>Modifier</Text>
